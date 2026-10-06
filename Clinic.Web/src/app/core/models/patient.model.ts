@@ -1,8 +1,8 @@
 import { PageQuery } from './pagination.model';
 
-export type Gender = 'Male' | 'Female' | 'Other';
+export type Gender = 'Male' | 'Female';
 
-export const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
+export const GENDERS: Gender[] = ['Male', 'Female'];
 
 /** Whole-years age from an ISO date-of-birth string. */
 export function calculateAge(dateOfBirth: string | null | undefined, now: Date = new Date()): number | null {
@@ -48,4 +48,3 @@ export interface UpdatePatientRequest {
 export interface PatientQuery extends PageQuery {
   age?: number;
 }
-
