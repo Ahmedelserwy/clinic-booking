@@ -20,6 +20,20 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
+
+  // The waiting-room screen. Deliberately outside the shell: no sidebar or top
+  // bar, so it can fill a TV or second monitor. It must stay above the shell
+  // route below, whose own `**` child would otherwise swallow this path.
+  {
+    path: 'queue-display',
+    title: 'Waiting room | Clinic',
+    canActivate: [authGuard, permissionGuard('appointments.view')],
+    loadComponent: () =>
+      import('./features/appointments/queue-display/queue-display.component').then(
+        (m) => m.QueueDisplayComponent
+      ),
+  },
+
   {
     path: '',
     component: ShellLayoutComponent,

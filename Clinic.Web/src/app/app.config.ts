@@ -15,7 +15,13 @@ import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
 import { MAT_TOOLTIP_DEFAULT_OPTIONS } from '@angular/material/tooltip';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import {
+  PreloadAllModules,
+  provideRouter,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+  withPreloading,
+} from '@angular/router';
 import { provideTranslateLoader, provideTranslateService } from '@ngx-translate/core';
 
 import { routes } from './app.routes';
@@ -32,10 +38,14 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideAnimationsAsync(),
 
+    // PreloadAllModules downloads every lazy feature chunk in the background
+    // right after the first page loads, so moving between pages doesn't wait
+    // on a network request for the feature's JavaScript.
     provideRouter(
       routes,
       withComponentInputBinding(),
-      withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' })
+      withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
+      withPreloading(PreloadAllModules)
     ),
 
     provideHttpClient(withInterceptors([loadingInterceptor, errorInterceptor, authInterceptor])),

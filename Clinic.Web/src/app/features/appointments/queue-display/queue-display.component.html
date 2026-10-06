@@ -1,0 +1,96 @@
+<div class="screen" dir="rtl">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🩺</div>
+      <div>
+        <b>العيادة</b>
+        <small>شاشة انتظار المرضى</small>
+      </div>
+    </div>
+
+    <div class="total">
+      <span>إجمالي المرضى اليوم</span>
+      <b>{{ digits(total()) }}</b>
+    </div>
+
+    <div class="clock">
+      <b>{{ time() }}</b>
+      <small>{{ date() }}</small>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Part 1 · cards ------------------------------------------------ -->
+    <section class="cards">
+      @if (current(); as now) {
+        <!-- Keyed on the appointment so the entrance animation replays when the queue moves on. -->
+        @for (entry of [now]; track entry.appointment.id) {
+          <div class="card current pop">
+            <div class="label">يتم الآن استدعاء</div>
+            <div class="pill"><span class="dot"></span>قيد الفحص</div>
+            <div class="number">{{ digits(entry.no) }}</div>
+            <div class="patient">{{ shortName(entry.appointment.patientName) }}</div>
+            <div class="doctor">
+              <div class="avatar">🩺</div>
+              <div>
+                <b>{{ entry.appointment.doctorName }}</b>
+                @if (doctorOf(entry.appointment.doctorId); as doctor) {
+                  <small>{{ doctor.specialization | specialty }}</small>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="card current idle">
+          <div class="number">☕</div>
+          <div class="patient">لا يوجد مرضى في الانتظار</div>
+        </div>
+      }
+
+      <div class="next">
+        <h2>الدور القادم</h2>
+        @for (entry of upcoming(); track entry.appointment.id; let first = $first) {
+          <div class="card row pop" [class.first]="first">
+            <div class="no">{{ digits(entry.no) }}</div>
+            <div class="info">
+              <b>{{ shortName(entry.appointment.patientName) }}</b>
+              <small>
+                {{ entry.appointment.doctorName }}
+                @if (doctorOf(entry.appointment.doctorId); as doctor) {
+                  · {{ doctor.specialization | specialty }}
+                }
+              </small>
+            </div>
+            <div class="wait">
+              <b>{{ digits(entry.waitMinutes) }}</b>
+              <small>دقيقة تقريبًا</small>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Part 2 · animated instructions -------------------------------- -->
+    <section class="card instructions">
+      <div class="rings"><span></span><span></span><span></span></div>
+      <div class="heading">تعليمات للمرضى</div>
+
+      <!-- Keyed on the title so the slide and its progress bar restart on every change. -->
+      @for (item of [tip()]; track item.title) {
+        <div class="slide">
+          <div class="icon">{{ item.icon }}</div>
+          <h1>{{ item.title }}</h1>
+          <p>{{ item.body }}</p>
+        </div>
+        <div class="progress"><i></i></div>
+      }
+
+      <div class="dots">
+        @for (item of tips; track item.title; let i = $index) {
+          <i [class.active]="i === tipIndex()"></i>
+        }
+      </div>
+    </section>
+  </main>
+</div>

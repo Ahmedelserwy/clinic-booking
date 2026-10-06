@@ -76,7 +76,6 @@ import {
   PositionedItem,
   TimeInterval,
 } from './calendar.model';
-import { WaitingListComponent, WaitingListData } from './waiting-list.component';
 
 const EMPTY_PAGE = { pageIndex: 1, pageSize: 0, count: 0, data: [] };
 
@@ -85,6 +84,9 @@ const RANGE_PAGE_SIZE = 500;
 
 /** How often the "now" line moves. A minute is finer than anyone reads a diary. */
 const NOW_TICK_MS = 30_000;
+
+/** The waiting-room screen's route. It lives outside the shell, so it opens full-screen. */
+const QUEUE_DISPLAY_ROUTE = '/queue-display';
 
 interface LaneBands {
   working: { topPx: number; heightPx: number }[];
@@ -636,27 +638,19 @@ export class AppointmentCalendarComponent {
     return params;
   }
 
+  /**
+   * Opens the waiting-room screen in a new tab.
+   *
+   * It used to open a dialog listing the day's Pending bookings. The patient-facing
+   * queue screen replaces that: it is a separate full-screen page meant for a TV
+   * or a second monitor, so it has to be its own tab rather than a popup over
+   * this one. The route sits outside the shell layout, so the tab has no sidebar.
+   *
+   * The name `openWaitingList` is kept so the template binding is unchanged.
+   */
   protected openWaitingList(): void {
-    const pending = this.visibleAppointments().filter(
-      (appointment) => appointment.status === 'Pending'
-    );
-
-    this.dialog
-      .open<WaitingListComponent, WaitingListData, Appointment | null>(WaitingListComponent, {
-        data: {
-          appointments: pending,
-          fallbackDurationMinutes: this.settings.slotMinutes(),
-          dateLabel: this.headlineDate(),
-        },
-        width: '520px',
-        maxWidth: '94vw',
-      })
-      .afterClosed()
-      .subscribe((appointment) => {
-        if (appointment) {
-          this.openAppointment(appointment);
-        }
-      });
+    const url = this.router.serializeUrl(this.router.createUrlTree([QUEUE_DISPLAY_ROUTE]));
+    window.open(url, '_blank');
   }
 
   protected openAppointment(appointment: Appointment): void {

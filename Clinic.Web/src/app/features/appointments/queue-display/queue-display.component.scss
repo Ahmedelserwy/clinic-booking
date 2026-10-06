@@ -1,0 +1,475 @@
+// Uses the app's theme tokens where they exist, with fallbacks, so the screen
+// follows light/dark mode and still renders if a token is renamed.
+:host {
+  --qd-primary: var(--c-primary, #0f766e);
+  --qd-soft: var(--c-primary-soft, #d9efeb);
+  --qd-surface: var(--c-surface, #ffffff);
+  --qd-bg: var(--c-surface-2, #eef5f3);
+  --qd-text: var(--c-text, #12302b);
+  --qd-muted: var(--c-text-muted, #6b8580);
+  --qd-border: var(--c-border, #dbe8e5);
+  --tip-ms: 6s; // keep in sync with TIP_MS in the component
+
+  display: block;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--qd-bg);
+  color: var(--qd-text);
+}
+
+.screen {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: 20px 28px;
+}
+
+.card {
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: 26px;
+  box-shadow: 0 8px 30px rgb(15 118 110 / 10%);
+}
+
+// ------------------------------------------------------------------ header --
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  b {
+    display: block;
+    font-size: 26px;
+    line-height: 1.1;
+  }
+
+  small {
+    color: var(--qd-muted);
+    font-size: 14px;
+  }
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--qd-primary);
+  font-size: 26px;
+}
+
+.total {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 22px;
+  border-radius: 99px;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  box-shadow: 0 8px 30px rgb(15 118 110 / 10%);
+
+  span {
+    color: var(--qd-muted);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  b {
+    color: var(--qd-primary);
+    font-size: 32px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.clock {
+  text-align: end;
+
+  b {
+    display: block;
+    font-size: 34px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  small {
+    color: var(--qd-muted);
+  }
+}
+
+// -------------------------------------------------------------------- body --
+.main {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+  min-height: 0;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  min-height: 0;
+}
+
+.pop {
+  animation: pop 0.9s ease;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// ----------------------------------------------------------------- current --
+.current {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  padding: 26px 28px;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: -80px;
+    top: -80px;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    background: var(--qd-soft);
+    opacity: 0.7;
+  }
+
+  > * {
+    position: relative;
+  }
+}
+
+.current.idle {
+  align-items: center;
+  text-align: center;
+}
+
+.label {
+  color: var(--qd-muted);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  padding: 8px 20px;
+  border-radius: 99px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f59e0b;
+  animation: pulse 1.4s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(245 158 11 / 60%);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgb(245 158 11 / 0%);
+  }
+}
+
+.number {
+  color: var(--qd-primary);
+  font-size: clamp(80px, 11vw, 190px);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.patient {
+  font-size: clamp(26px, 2.8vw, 48px);
+  font-weight: 800;
+}
+
+.doctor {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: var(--qd-soft);
+
+  b {
+    display: block;
+    font-size: 22px;
+  }
+
+  small {
+    color: var(--qd-muted);
+    font-size: 15px;
+  }
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--qd-primary);
+  font-size: 22px;
+}
+
+// -------------------------------------------------------------------- next --
+.next {
+  display: grid;
+  grid-template-rows: auto repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  min-height: 0;
+
+  h2 {
+    color: var(--qd-muted);
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+
+  .no {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: var(--qd-soft);
+    color: var(--qd-primary);
+    font-size: 34px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &.first .no {
+    background: var(--qd-primary);
+    color: #fff;
+  }
+
+  .info {
+    flex: 1;
+    min-width: 0;
+
+    b {
+      display: block;
+      font-size: 22px;
+    }
+
+    small {
+      color: var(--qd-muted);
+      font-size: 14px;
+    }
+  }
+
+  .wait {
+    flex: none;
+    text-align: center;
+
+    b {
+      display: block;
+      color: var(--qd-primary);
+      font-size: 28px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    small {
+      color: var(--qd-muted);
+      font-size: 12px;
+    }
+  }
+}
+
+// ------------------------------------------------------------ instructions --
+.instructions {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  overflow: hidden;
+  border: 0;
+  background: linear-gradient(160deg, var(--qd-primary), color-mix(in srgb, var(--qd-primary) 60%, #000));
+  color: #fff;
+  text-align: center;
+}
+
+.rings span {
+  position: absolute;
+  inset-inline-start: 50%;
+  top: 45%;
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  border: 2px solid rgb(255 255 255 / 25%);
+  border-radius: 50%;
+  animation: ring 6s linear infinite;
+
+  &:nth-child(2) {
+    animation-delay: 2s;
+  }
+
+  &:nth-child(3) {
+    animation-delay: 4s;
+  }
+}
+
+@keyframes ring {
+  to {
+    width: 120vmin;
+    height: 120vmin;
+    margin: -60vmin;
+    opacity: 0;
+  }
+}
+
+.heading {
+  position: absolute;
+  top: 24px;
+  inset-inline: 0;
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.slide {
+  position: relative;
+  animation: slide 0.8s ease;
+
+  .icon {
+    display: inline-block;
+    font-size: clamp(90px, 10vw, 150px);
+    animation: bob 2s ease-in-out infinite;
+  }
+
+  h1 {
+    margin: 12px 0 8px;
+    font-size: clamp(28px, 3vw, 46px);
+  }
+
+  p {
+    margin: 0;
+    font-size: clamp(17px, 1.6vw, 24px);
+    opacity: 0.85;
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(-18px) scale(1.08);
+  }
+}
+
+.dots {
+  position: absolute;
+  bottom: 34px;
+  inset-inline: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+
+  i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0.3;
+    transition: all 0.4s;
+
+    &.active {
+      width: 34px;
+      border-radius: 8px;
+      opacity: 1;
+    }
+  }
+}
+
+.progress {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  height: 5px;
+  background: rgb(255 255 255 / 15%);
+
+  i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: #5eead4;
+    animation: fill var(--tip-ms) linear forwards;
+  }
+}
+
+@keyframes fill {
+  to {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1000px) {
+  :host {
+    height: auto;
+    overflow: auto;
+  }
+
+  .main,
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .instructions {
+    min-height: 380px;
+  }
+}
