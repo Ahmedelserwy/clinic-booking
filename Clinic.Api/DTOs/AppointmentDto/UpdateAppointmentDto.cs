@@ -12,7 +12,7 @@ namespace Clinic.Api.DTOs.AppointmentDto
         public int PatientId { get; set; }
 
         [Required]
-        public DateTime AppointmentDate { get; set; }
+        public DateTimeOffset AppointmentDate { get; set; }
 
         [Range(AppointmentDurations.MinimumMinutes, AppointmentDurations.MaximumMinutes)]
         public int DurationMinutes { get; set; } = AppointmentDurations.DefaultMinutes;

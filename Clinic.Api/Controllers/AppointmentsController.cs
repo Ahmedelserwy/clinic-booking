@@ -116,10 +116,13 @@ namespace Clinic.Api.Controllers
 
         #region Booking rules
 
-        /// <summary>The interval a booking occupies: [StartsAt, EndsAt).</summary>
-        private readonly record struct Slot(DateTime StartsAt, DateTime EndsAt)
+        /// <summary>The local schedule interval and its absolute UTC interval.</summary>
+        private readonly record struct Slot(DateTimeOffset LocalStartsAt, DateTimeOffset LocalEndsAt)
         {
-            public static Slot From(DateTime startsAt, int durationMinutes) =>
+            public DateTime StartsAtUtc => LocalStartsAt.UtcDateTime;
+            public DateTime EndsAtUtc => LocalEndsAt.UtcDateTime;
+
+            public static Slot From(DateTimeOffset startsAt, int durationMinutes) =>
                 new(startsAt, startsAt.AddMinutes(durationMinutes));
 
             /// <summary>
@@ -129,9 +132,9 @@ namespace Clinic.Api.Controllers
             /// </summary>
             public void ApplyTo(Appointment appointment)
             {
-                appointment.AppointmentDate = StartsAt;
-                appointment.StartTime = StartsAt;
-                appointment.EndTime = EndsAt;
+                appointment.AppointmentDate = StartsAtUtc;
+                appointment.StartTime = StartsAtUtc;
+                appointment.EndTime = EndsAtUtc;
             }
         }
 
@@ -144,7 +147,8 @@ namespace Clinic.Api.Controllers
         /// </summary>
         private async Task<ActionResult?> CheckSlotAsync(int doctorId, Slot slot, int? excludeAppointmentId)
         {
-            if (!await _appointmentRepository.IsWithinWorkingHoursAsync(doctorId, slot.StartsAt, slot.EndsAt))
+            if (!await _appointmentRepository.IsWithinWorkingHoursAsync(
+                    doctorId, slot.LocalStartsAt.DateTime, slot.LocalEndsAt.DateTime))
             {
                 return BadRequest(new ProblemDetails
                 {
@@ -154,7 +158,7 @@ namespace Clinic.Api.Controllers
             }
 
             if (await _appointmentRepository.HasOverlappingAppointmentAsync(
-                    doctorId, slot.StartsAt, slot.EndsAt, excludeAppointmentId))
+                    doctorId, slot.StartsAtUtc, slot.EndsAtUtc, excludeAppointmentId))
             {
                 return SlotTaken();
             }

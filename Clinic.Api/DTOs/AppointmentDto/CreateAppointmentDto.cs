@@ -10,9 +10,12 @@ namespace Clinic.Api.DTOs.AppointmentDto
         [Range(1, int.MaxValue, ErrorMessage = "DoctorId is required.")]
         public int DoctorId { get; set; }
 
-        /// <summary>When the appointment starts. The interval booked is [AppointmentDate, +Duration).</summary>
+        /// <summary>
+        /// When the appointment starts, including the clinic device's local offset.
+        /// The interval booked is [AppointmentDate, +Duration).
+        /// </summary>
         [Required]
-        public DateTime AppointmentDate { get; set; }
+        public DateTimeOffset AppointmentDate { get; set; }
 
         /// <summary>
         /// How long the appointment runs, in minutes.

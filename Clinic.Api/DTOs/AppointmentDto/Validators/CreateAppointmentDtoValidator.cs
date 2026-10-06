@@ -18,9 +18,9 @@ namespace Clinic.Api.DTOs.AppointmentDto.Validators
             
 
         }
-        private bool BeAValidDate(DateTime date)
+        private bool BeAValidDate(DateTimeOffset date)
         {
-            return date > DateTime.MinValue;
+            return date > DateTimeOffset.MinValue;
         }
     }   
 }

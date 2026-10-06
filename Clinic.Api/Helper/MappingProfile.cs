@@ -114,6 +114,9 @@ namespace Clinic.Api.Helper
 
             CreateMap<CreateAppointmentDto, Appointment>()
                 .IgnoreSystemOwnedMembers()
+                .ForMember(
+                    dest => dest.AppointmentDate,
+                    opt => opt.MapFrom(src => src.AppointmentDate.UtcDateTime))
                 .ForMember(dest => dest.Doctor, opt => opt.Ignore())
                 .ForMember(dest => dest.Patient, opt => opt.Ignore())
                 .ForMember(dest => dest.StartTime, opt => opt.Ignore())
@@ -123,6 +126,9 @@ namespace Clinic.Api.Helper
 
             CreateMap<UpdateAppointmentDto, Appointment>()
                 .IgnoreSystemOwnedMembers()
+                .ForMember(
+                    dest => dest.AppointmentDate,
+                    opt => opt.MapFrom(src => src.AppointmentDate.UtcDateTime))
                 .ForMember(dest => dest.Doctor, opt => opt.Ignore())
                 .ForMember(dest => dest.Patient, opt => opt.Ignore())
                 .ForMember(dest => dest.StartTime, opt => opt.Ignore())

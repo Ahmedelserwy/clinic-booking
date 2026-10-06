@@ -1,5 +1,5 @@
 import { Appointment, UpdateAppointmentRequest } from '../models/appointment.model';
-import { parseDate } from './date.util';
+import { parseDate, toLocalIso } from './date.util';
 
 /** Sanity bound: nothing in a clinic diary legitimately runs longer than a day. */
 const MAX_DURATION_MINUTES = 24 * 60;
@@ -47,10 +47,12 @@ export function toUpdateRequest(
   appointment: Appointment,
   fallbackDurationMinutes: number
 ): UpdateAppointmentRequest {
+  const startsAt = appointmentStart(appointment);
+
   return {
     doctorId: appointment.doctorId,
     patientId: appointment.patientId,
-    appointmentDate: appointment.appointmentDate,
+    appointmentDate: startsAt ? toLocalIso(startsAt) : appointment.appointmentDate,
     durationMinutes: appointmentDuration(appointment, fallbackDurationMinutes),
     status: appointment.status,
     notes: appointment.notes ?? null,

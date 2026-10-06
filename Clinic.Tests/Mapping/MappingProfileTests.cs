@@ -93,7 +93,7 @@ namespace Clinic.Tests.Mapping
             {
                 DoctorId = 1,
                 PatientId = 2,
-                AppointmentDate = new DateTime(2026, 8, 3, 10, 0, 0)
+                AppointmentDate = new DateTimeOffset(2026, 8, 3, 10, 0, 0, TimeSpan.FromHours(3))
             };
 
             var appointment = Mapper.Map<Appointment>(dto);
@@ -103,7 +103,9 @@ namespace Clinic.Tests.Mapping
             Assert.Null(appointment.Patient);
             Assert.Equal(1, appointment.DoctorId);
             Assert.Equal(2, appointment.PatientId);
-            Assert.Equal(new DateTime(2026, 8, 3, 10, 0, 0), appointment.AppointmentDate);
+            Assert.Equal(
+                new DateTime(2026, 8, 3, 7, 0, 0, DateTimeKind.Utc),
+                appointment.AppointmentDate);
         }
 
         [Fact]
@@ -123,7 +125,7 @@ namespace Clinic.Tests.Mapping
             {
                 DoctorId = 3,
                 PatientId = 4,
-                AppointmentDate = new DateTime(2026, 9, 1, 9, 0, 0)
+                AppointmentDate = new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.FromHours(3))
             }, existing);
 
             Assert.Equal(7, existing.Id);                 // route id stays authoritative
@@ -131,7 +133,9 @@ namespace Clinic.Tests.Mapping
             Assert.NotNull(existing.Patient);
             Assert.Equal(3, existing.DoctorId);
             Assert.Equal(4, existing.PatientId);
-            Assert.Equal(new DateTime(2026, 9, 1, 9, 0, 0), existing.AppointmentDate);
+            Assert.Equal(
+                new DateTime(2026, 9, 1, 6, 0, 0, DateTimeKind.Utc),
+                existing.AppointmentDate);
         }
 
         #endregion

@@ -261,6 +261,46 @@ namespace Clinic.Tests.Controllers
         }
 
         [Fact]
+        public async Task AppointmentsController_Create_Preserves_Local_Schedule_Time_And_Stores_Utc()
+        {
+            var localStart = new DateTimeOffset(2026, 8, 3, 23, 0, 0, TimeSpan.FromHours(3));
+            var appointment = new Appointment { DoctorId = 1, PatientId = 2 };
+            var appointments = new Mock<IAppointmentRepository>();
+            appointments.Setup(r => r.AddAsync(It.IsAny<Appointment>())).Returns(Task.CompletedTask);
+            appointments.Setup(r => r.IsWithinWorkingHoursAsync(1, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .ReturnsAsync(true);
+            appointments.Setup(r => r.HasOverlappingAppointmentAsync(
+                    1, It.IsAny<DateTime>(), It.IsAny<DateTime>(), null))
+                .ReturnsAsync(false);
+
+            RepositoryFor<Doctor>().Setup(r => r.GetByIdAsync(1))
+                .ReturnsAsync(new Doctor { Id = 1, Name = "Dr. Aya", Specialization = "Cardiology" });
+            RepositoryFor<Patient>().Setup(r => r.GetByIdAsync(2))
+                .ReturnsAsync(new Patient { Id = 2, Name = "Sara", Phone = "0100", Gender = "F" });
+
+            _mapper.Setup(m => m.Map<Appointment>(It.IsAny<CreateAppointmentDto>())).Returns(appointment);
+            _mapper.Setup(m => m.Map<AppointmentDto>(appointment)).Returns(new AppointmentDto());
+
+            var sut = new AppointmentsController(_mapper.Object, appointments.Object, _unitOfWork.Object);
+
+            await sut.Create(new CreateAppointmentDto
+            {
+                DoctorId = 1,
+                PatientId = 2,
+                AppointmentDate = localStart,
+                DurationMinutes = 30
+            });
+
+            appointments.Verify(r => r.IsWithinWorkingHoursAsync(
+                1, localStart.DateTime, localStart.AddMinutes(30).DateTime), Times.Once);
+            appointments.Verify(r => r.HasOverlappingAppointmentAsync(
+                1, localStart.UtcDateTime, localStart.AddMinutes(30).UtcDateTime, null), Times.Once);
+            Assert.Equal(localStart.UtcDateTime, appointment.AppointmentDate);
+            Assert.Equal(localStart.UtcDateTime, appointment.StartTime);
+            Assert.Equal(localStart.AddMinutes(30).UtcDateTime, appointment.EndTime);
+        }
+
+        [Fact]
         public async Task AppointmentsController_Delete_Commits_The_UnitOfWork()
         {
             var appointment = new Appointment { Id = 5, DoctorId = 1, PatientId = 2 };

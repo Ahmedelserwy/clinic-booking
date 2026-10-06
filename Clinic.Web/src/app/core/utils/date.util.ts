@@ -14,12 +14,16 @@ export function combineDateAndTime(date: Date, time: string): string {
   return toLocalIso(result);
 }
 
-/** ISO 8601 without a trailing `Z`, preserving the wall-clock time the user picked. */
+/** ISO 8601 with the browser's local offset, preserving the wall-clock time the user picked. */
 export function toLocalIso(date: Date): string {
   const pad = (value: number): string => `${value}`.padStart(2, '0');
+  const offsetMinutes = -date.getTimezoneOffset();
+  const offsetSign = offsetMinutes >= 0 ? '+' : '-';
+  const absoluteOffset = Math.abs(offsetMinutes);
   return (
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:00` +
+    `${offsetSign}${pad(Math.floor(absoluteOffset / 60))}:${pad(absoluteOffset % 60)}`
   );
 }
 
