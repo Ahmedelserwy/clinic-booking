@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, of, switchMap, timer } from 'rxjs';
 
-import { ClinicSettingsStore } from '../../../core/data/clinic-settings.store';
 import { Appointment } from '../../../core/models/appointment.model';
 import { Doctor } from '../../../core/models/doctor.model';
 import { AppointmentsService } from '../../../core/services/appointments.service';
@@ -51,7 +50,6 @@ const statusOf = (appointment: Appointment): string =>
   String(appointment.status ?? '').toLowerCase();
 const isCancelled = (appointment: Appointment) => statusOf(appointment).includes('cancel');
 const isCompleted = (appointment: Appointment) => statusOf(appointment).includes('complet');
-const isConfirmed = (appointment: Appointment) => statusOf(appointment).includes('confirm');
 
 /** A 404 from this API's list endpoints means "nothing booked", not a failure. */
 const isNotFound = (error: unknown): boolean =>
@@ -61,9 +59,10 @@ const isNotFound = (error: unknown): boolean =>
  * Full-screen waiting-room display. Opens in its own tab (no shell, no sidebar)
  * and is meant for a TV or a second monitor facing the patients.
  *
- * "Who is being seen now" is derived, not stored: there is no in-progress
- * status, so the earliest confirmed appointment today that is not yet completed
- * is the current one. Marking it Completed on the calendar moves the queue on.
+ * "Who is being called now" is derived from appointment times: new bookings are
+ * Pending by default, so requiring Confirmed hid them from this screen. The
+ * latest non-cancelled appointment whose start time has arrived is called until
+ * the next appointment time arrives. Completed appointments are not called.
  */
 @Component({
   selector: 'app-queue-display',
@@ -75,7 +74,6 @@ const isNotFound = (error: unknown): boolean =>
 export class QueueDisplayComponent {
   private readonly api = inject(AppointmentsService);
   private readonly doctorsApi = inject(DoctorsService);
-  private readonly settings = inject(ClinicSettingsStore);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly all = signal<Appointment[]>([]);
@@ -102,7 +100,7 @@ export class QueueDisplayComponent {
   /** Changes only when the calendar day does, so the queue is not rebuilt every second. */
   private readonly dayKey = computed(() => this.now().toDateString());
 
-  /** Today's confirmed and completed appointments in time order — the patients who are actually coming. */
+  /** All non-cancelled appointments today, in scheduled order. */
   private readonly today = computed<QueueEntry[]>(() => {
     const day = new Date(this.dayKey());
 
@@ -112,26 +110,44 @@ export class QueueDisplayComponent {
         (entry): entry is { appointment: Appointment; start: Date } =>
           entry.start !== null &&
           isSameDay(entry.start, day) &&
-          !isCancelled(entry.appointment) &&
-          (isConfirmed(entry.appointment) || isCompleted(entry.appointment))
+          !isCancelled(entry.appointment)
       )
       .sort((a, b) => a.start.getTime() - b.start.getTime())
       .map((entry, index) => ({ appointment: entry.appointment, no: index + 1 }));
   });
 
-  private readonly waiting = computed(() =>
-    this.today().filter((entry) => !isCompleted(entry.appointment))
-  );
-
   protected readonly total = computed(() => this.today().length);
-  protected readonly current = computed(() => this.waiting()[0] ?? null);
+  protected readonly current = computed(() => {
+    const now = this.now().getTime();
+    const due = this.today().filter((entry) => {
+      const start = appointmentStart(entry.appointment);
+      return start !== null && start.getTime() <= now;
+    });
+    const latest = due.at(-1);
 
-  /** The next three, each with an estimated wait of one average slot per person ahead. */
+    return latest && !isCompleted(latest.appointment) ? latest : null;
+  });
+
+  /** The next three scheduled, non-completed appointments with time-to-appointment estimates. */
   protected readonly upcoming = computed(() => {
-    const slot = this.settings.slotMinutes();
-    return this.waiting()
-      .slice(1, 4)
-      .map((entry, index) => ({ ...entry, waitMinutes: (index + 1) * slot }));
+    const now = this.now().getTime();
+    return this.today()
+      .filter((entry) => {
+        const start = appointmentStart(entry.appointment);
+        return (
+          !isCompleted(entry.appointment) &&
+          start !== null &&
+          start.getTime() > now
+        );
+      })
+      .slice(0, 3)
+      .map((entry) => {
+        const start = appointmentStart(entry.appointment)!;
+        return {
+          ...entry,
+          waitMinutes: Math.ceil((start.getTime() - now) / 60_000),
+        };
+      });
   });
 
   private readonly doctorsById = computed(
