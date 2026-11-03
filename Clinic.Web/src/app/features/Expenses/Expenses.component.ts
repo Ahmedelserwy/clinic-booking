@@ -21,7 +21,7 @@ import {
   PAYMENT_KEYS,
   PAYMENT_LABELS,
   PaymentMethod,
-}from'../../core/models/Expense.model' ;
+} from '../../core/models/Expense.model';
 import { ExpenseService } from '../../core/services/Expense.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastOptions } from '../../core/services/toast.store';
@@ -56,8 +56,8 @@ export class PortalDirective implements OnInit, OnDestroy {
   selector: 'app-expenses',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, PortalDirective],
-  templateUrl: './Expenses.component .html',
-  styleUrl: './expenses.component.scss',
+  templateUrl: './Expenses.component.html',
+  styleUrl: './Expenses.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExpensesComponent {
