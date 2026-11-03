@@ -39,9 +39,43 @@
   line-height: 1.25;
 }
 
+.option-text strong {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
 .option-text small {
   font-size: var(--fs-xs);
   color: var(--c-text-subtle);
+}
+
+// The doctor field when closed: avatar, bold name, and the speciality as a
+// separate pill, so the two never read as one word.
+.doctor-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.doctor-trigger-name {
+  flex: none;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--c-text);
+}
+
+.doctor-trigger-spec {
+  min-width: 0;
+  padding: 2px 10px;
+  border-radius: var(--r-full);
+  background: var(--c-primary-soft);
+  color: var(--c-primary-soft-fg);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hint,
@@ -61,11 +95,249 @@
 }
 
 // -----------------------------------------------------------------------------
-// Time slots
+// Day strip
 //
-// Taken slots stay visible and carry the name that holds them — hiding them
-// makes a full day look like a broken picker, and showing who has the slot is
-// what lets reception offer an alternative on the phone.
+// Only days the doctor works are offered, each with how many times are still free,
+// so a day is never a dead end. A full day stays visible but cannot be picked.
+// -----------------------------------------------------------------------------
+.days-head {
+  margin-block-end: var(--sp-2);
+}
+
+// Month shortcuts above the strip.
+.months-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-block-end: var(--sp-3);
+}
+
+.months-nav {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  color: var(--c-primary);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-standard);
+
+  .chev {
+    width: 16px;
+    height: 16px;
+  }
+  &:hover:not(:disabled) {
+    background: var(--c-primary-soft);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sh-focus);
+  }
+}
+
+.months {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: var(--sp-2);
+  padding-block-end: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.month-chip {
+  flex: none;
+  padding: 6px 14px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-micro) var(--ease-standard),
+    background-color var(--dur-micro) var(--ease-standard);
+
+  &:hover:not(.month-chip-on) {
+    border-color: var(--c-primary);
+    background: var(--c-primary-soft);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sh-focus);
+  }
+}
+
+.month-chip-on,
+.month-chip-on:hover {
+  border-color: var(--c-primary);
+  background: var(--c-primary-soft);
+  color: var(--c-primary-soft-fg);
+  font-weight: var(--fw-semibold);
+}
+
+.days {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-2);
+}
+
+// One strip, scrolled sideways; more days are added as it nears the end.
+.days-scroll {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: var(--sp-2);
+  padding-block-end: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.month-mark {
+  flex: none;
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--r-md);
+  background: var(--c-primary-soft);
+  color: var(--c-primary-soft-fg);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+
+  small {
+    font-size: 11px;
+    font-weight: var(--fw-regular);
+  }
+}
+
+.days-nav {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-primary);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--c-primary-soft);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sh-focus);
+  }
+}
+
+.chev {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.day {
+  flex: 0 0 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 78px;
+  padding: 8px 4px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-micro) var(--ease-standard),
+    background-color var(--dur-micro) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    border-color: var(--c-primary);
+    background: var(--c-primary-soft);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--sh-focus);
+  }
+}
+
+.day-wd {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-muted);
+}
+
+.day-num {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-free {
+  font-size: 11px;
+  color: var(--c-success, var(--c-text-muted));
+}
+
+.day-selected,
+.day-selected:hover:not(:disabled) {
+  border-color: var(--c-primary);
+  background: var(--c-primary);
+  color: var(--c-primary-fg);
+
+  .day-wd,
+  .day-free {
+    color: color-mix(in srgb, var(--c-primary-fg) 85%, transparent);
+  }
+}
+
+.day-full {
+  border-style: dashed;
+  border-color: var(--c-border);
+  background: var(--c-surface-2);
+  color: var(--c-text-subtle);
+  cursor: not-allowed;
+
+  .day-wd,
+  .day-free {
+    color: var(--c-text-subtle);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Time slots: free times only
 // -----------------------------------------------------------------------------
 .slots-head {
   display: flex;
@@ -114,25 +386,6 @@
   border-color: var(--c-primary);
   background: var(--c-primary);
   color: var(--c-primary-fg);
-}
-
-.slot-taken {
-  border-style: dashed;
-  border-color: var(--c-border);
-  background: var(--c-surface-2);
-  color: var(--c-text-subtle);
-  cursor: not-allowed;
-  text-decoration: line-through;
-}
-
-.slot small {
-  font-size: 10px;
-  font-weight: var(--fw-regular);
-  text-decoration: none;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 // -----------------------------------------------------------------------------

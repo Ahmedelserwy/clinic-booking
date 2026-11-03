@@ -11,6 +11,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { PermissionService } from '../../../core/authz/permission.service';
+import { ClinicSettingsStore } from '../../../core/data/clinic-settings.store';
 import { Appointment, AppointmentTimeStatus } from '../../../core/models/appointment.model';
 import { Doctor } from '../../../core/models/doctor.model';
 import { AppointmentsService } from '../../../core/services/appointments.service';
@@ -70,6 +71,7 @@ export class AppointmentListComponent {
   private readonly doctorsApi = inject(DoctorsService);
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
+  private readonly settings = inject(ClinicSettingsStore);
   private readonly translate = inject(TranslateService);
 
   protected readonly permissions = inject(PermissionService);
@@ -223,10 +225,20 @@ export class AppointmentListComponent {
       id: 'edit',
       icon: 'edit',
       label: 'appointments.edit',
-      // A past appointment cannot be moved — its slot no longer exists.
-      visible: (row) => deriveAppointmentStatus(row.appointmentDate) !== 'Past',
+      // A past appointment cannot be moved — its slot no longer exists — and a
+      // cancelled or completed one has nothing left to move.
+      visible: (row) =>
+        deriveAppointmentStatus(row.appointmentDate) !== 'Past' &&
+        row.status !== 'Cancelled' &&
+        row.status !== 'Completed',
     },
-    { id: 'delete', icon: 'delete', label: 'appointments.delete', tone: 'danger' },
+    {
+      id: 'delete',
+      icon: 'delete',
+      label: 'appointments.delete',
+      tone: 'danger',
+      visible: (row) => row.status !== 'Cancelled' && row.status !== 'Completed',
+    },
   ];
 
   constructor() {
@@ -332,10 +344,15 @@ export class AppointmentListComponent {
         return;
       }
 
-      this.api.cancelAppointment(row.id).subscribe(() => {
-        this.notifications.success(this.translate.instant('appointments.deleted'));
-        this.load();
-      });
+      // Marked Cancelled, not removed, so the status column can show it.
+      this.api
+        .cancelAppointment(row, this.settings.settings().slotMinutes)
+        .subscribe(() => {
+          this.notifications.success(this.translate.instant('appointments.statusChanged'), {
+            detail: `${row.patientName} · ${row.doctorName}`,
+          });
+          this.load();
+        });
     });
   }
 

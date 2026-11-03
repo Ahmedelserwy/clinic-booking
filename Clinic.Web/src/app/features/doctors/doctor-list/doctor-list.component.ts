@@ -33,6 +33,7 @@ interface DoctorCard {
   workingDays: string;
   weeklyHours: number;
   hasSchedule: boolean;
+  serviceCount: number;
 }
 
 const EMPTY_PAGE = { pageIndex: 1, pageSize: 0, count: 0, data: [] };
@@ -90,7 +91,9 @@ export class DoctorListComponent {
           // Also matched on the label the user can actually see: searching
           // "أطفال" has to find the doctor whose column reads "طب الأطفال",
           // even though the database says "Pediatrics".
-          specialtyLabel(doctor.specialization).toLowerCase().includes(term)
+          specialtyLabel(doctor.specialization).toLowerCase().includes(term) ||
+          // A service name finds the doctors who provide it.
+          (doctor.services ?? []).some((service) => service.name.toLowerCase().includes(term))
       )
       .map((doctor) => {
         const own = this.schedules().filter((schedule) => schedule.doctorId === doctor.id);
@@ -108,6 +111,7 @@ export class DoctorListComponent {
             .join(' · '),
           weeklyHours: Math.round((minutes / 60) * 10) / 10,
           hasSchedule: own.length > 0,
+          serviceCount: doctor.services?.length ?? 0,
         };
       });
   });
@@ -170,7 +174,9 @@ export class DoctorListComponent {
       }
 
       this.api.deleteDoctor(doctor.id).subscribe(() => {
-        this.notifications.success(this.translate.instant('doctors.deleted'));
+        this.notifications.success(this.translate.instant('doctors.deleted'), {
+          detail: doctor.name,
+        });
         this.load();
       });
     });

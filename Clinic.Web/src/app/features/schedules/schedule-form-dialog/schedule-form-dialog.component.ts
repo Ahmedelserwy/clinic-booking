@@ -15,6 +15,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { SchedulesService } from '../../../core/services/schedules.service';
 import {
   dateToMinutes,
+  formatTime12,
   minutesToDate,
   minutesToTimeSpan,
   timeToMinutes,
@@ -30,6 +31,9 @@ export interface ScheduleDialogData {
   schedule?: DoctorSchedule;
   presetDoctorId?: number;
   presetWeekDay?: WeekDay;
+  /** Pre-filled start/end for a new shift, in minutes from midnight (e.g. 540 = 9:00 AM). */
+  presetStartMinutes?: number;
+  presetEndMinutes?: number;
 }
 
 @Component({
@@ -75,11 +79,19 @@ export class ScheduleFormDialogComponent {
         [Validators.required]
       ),
       startTime: this.formBuilder.control<Date | null>(
-        minutesToDate(this.data.schedule ? timeToMinutes(this.data.schedule.startTime) : 9 * 60),
+        minutesToDate(
+          this.data.schedule
+            ? timeToMinutes(this.data.schedule.startTime)
+            : (this.data.presetStartMinutes ?? 9 * 60)
+        ),
         [Validators.required]
       ),
       endTime: this.formBuilder.control<Date | null>(
-        minutesToDate(this.data.schedule ? timeToMinutes(this.data.schedule.endTime) : 17 * 60),
+        minutesToDate(
+          this.data.schedule
+            ? timeToMinutes(this.data.schedule.endTime)
+            : (this.data.presetEndMinutes ?? 17 * 60)
+        ),
         [Validators.required]
       ),
     },
@@ -124,6 +136,15 @@ export class ScheduleFormDialogComponent {
       endTime: minutesToTimeSpan(endMinutes),
     };
 
+    const doctorName = this.data.doctors.find((doctor) => doctor.id === payload.doctorId)?.name;
+    const detail = [
+      doctorName,
+      this.translate.instant(`weekday.${payload.weekDay}`),
+      `${formatTime12(payload.startTime)} – ${formatTime12(payload.endTime)}`,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
     // Both branches are normalised to `Observable<void>`: update returns no
     // body while create echoes the row, and the caller cares about neither.
     const request: Observable<void> = this.data.schedule
@@ -138,7 +159,8 @@ export class ScheduleFormDialogComponent {
       next: () => {
         this.saving.set(false);
         this.notifications.success(
-          this.translate.instant(this.isEdit ? 'schedules.updated' : 'schedules.created')
+          this.translate.instant(this.isEdit ? 'schedules.updated' : 'schedules.created'),
+          { kind: 'calendar', detail }
         );
         this.dialogRef.close(true);
       },

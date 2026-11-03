@@ -2,162 +2,325 @@
 
 <mat-dialog-content>
   <form class="record-form" [formGroup]="form" novalidate>
+    <!-- Who: fixed when opened from a patient file, chosen when opened from the records list. -->
     @if (picksPatient) {
-      <mat-form-field>
-        <mat-label>{{ 'appointments.patient' | translate }}</mat-label>
-        <mat-select formControlName="patientId">
-          @for (patient of patients; track patient.id) {
-            <mat-option [value]="patient.id">{{ patient.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <ui-field-error [control]="form.controls.patientId" [submitted]="submitted()" />
+      <div class="field">
+        <mat-form-field>
+          <mat-label>{{ 'appointments.patient' | translate }}</mat-label>
+          <mat-select formControlName="patientId">
+            @for (patient of patients; track patient.id) {
+              <mat-option [value]="patient.id">{{ patient.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <ui-field-error [control]="form.controls.patientId" [submitted]="submitted()" />
+      </div>
     } @else {
-      <p class="patient-line">
+      <div class="patient-line">
         <ui-icon name="user" size="sm" />
-        {{ fixedPatientName }}
-      </p>
+        <span>{{ fixedPatientName }}</span>
+      </div>
     }
 
-    <div class="form-grid cols-2">
-      <div class="field">
+    <!-- Safety first: allergies and chronic conditions stay in view while writing. -->
+    @if (hasAlerts) {
+      <div class="alert alert-warning alerts">
+        <ui-icon name="vitals" size="md" />
+        <div class="alert-body">
+          @if (data.allergies?.length) {
+            <div class="alert-group">
+              <strong>{{ 'patients.allergies' | translate }}</strong>
+              @for (item of data.allergies; track item) {
+                <span class="badge badge-danger">{{ item }}</span>
+              }
+            </div>
+          }
+          @if (data.chronicDiseases?.length) {
+            <div class="alert-group">
+              <strong>{{ 'patients.chronicDiseases' | translate }}</strong>
+              @for (item of data.chronicDiseases; track item) {
+                <span class="badge badge-warning">{{ item }}</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Type, date and time default to "visit, now". One line, editable on demand. -->
+    <div class="when-line">
+      <span class="when-summary">
+        {{ typeMeta[form.controls.type.value].label | translate }} ·
+        {{ form.controls.occurredDate.value | date: 'EEE d MMM y' }} ·
+        {{ form.controls.occurredTime.value | date: 'h:mm a' }}
+      </span>
+      <button mat-button type="button" (click)="editingWhen.set(!editingWhen())">
+        <ui-icon name="edit" size="sm" />
+        {{ 'common.edit' | translate }}
+      </button>
+    </div>
+
+    @if (editingWhen()) {
+      <div class="when-fields">
         <mat-form-field>
           <mat-label>{{ 'records.type' | translate }}</mat-label>
           <mat-select formControlName="type">
             @for (type of recordTypes; track type) {
-              <mat-option [value]="type">
-                <span class="option-row">
-                  <ui-icon [name]="typeMeta[type].icon" size="sm" />
-                  {{ typeMeta[type].label | translate }}
-                </span>
-              </mat-option>
+              <mat-option [value]="type">{{ typeMeta[type].label | translate }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
-      </div>
 
-      <div class="field">
-        <mat-form-field>
-          <mat-label>{{ 'records.recordedBy' | translate }}</mat-label>
-          <mat-select formControlName="doctorId">
-            <mat-option [value]="null">{{ 'common.notSet' | translate }}</mat-option>
-            @for (doctor of data.doctors; track doctor.id) {
-              <mat-option [value]="doctor.id">{{ doctor.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
+        <div class="field">
+          <mat-form-field>
+            <mat-label>{{ 'common.date' | translate }}</mat-label>
+            <input
+              matInput
+              readonly
+              formControlName="occurredDate"
+              [matDatepicker]="datePicker"
+              [max]="maxDate"
+              (click)="datePicker.open()"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
+            <mat-datepicker #datePicker />
+          </mat-form-field>
+          <ui-field-error [control]="form.controls.occurredDate" [submitted]="submitted()" />
+        </div>
 
-      <div class="field">
-        <mat-form-field>
-          <mat-label>{{ 'common.date' | translate }}</mat-label>
-          <input
-            matInput
-            readonly
-            formControlName="occurredDate"
-            [matDatepicker]="datePicker"
-            [max]="maxDate"
-            (click)="datePicker.open()"
-          />
-          <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
-          <mat-datepicker #datePicker />
-        </mat-form-field>
-        <ui-field-error [control]="form.controls.occurredDate" [submitted]="submitted()" />
-      </div>
-
-      <div class="field">
         <mat-form-field>
           <mat-label>{{ 'common.time' | translate }}</mat-label>
           <input matInput formControlName="occurredTime" [matTimepicker]="timePicker" />
           <mat-timepicker-toggle matIconSuffix [for]="timePicker" />
-          <mat-timepicker #timePicker interval="15m" />
+          <mat-timepicker #timePicker />
         </mat-form-field>
-        <ui-field-error [control]="form.controls.occurredTime" [submitted]="submitted()" />
       </div>
+    }
 
-      <div class="field span-full">
-        <mat-form-field>
-          <mat-label>{{ 'common.details' | translate }}</mat-label>
-          <input matInput type="text" formControlName="title" />
-        </mat-form-field>
-        <ui-field-error [control]="form.controls.title" [submitted]="submitted()" />
-      </div>
-
-      <div class="field span-full">
+    <!-- The consultation, in the order a doctor works: what the patient says and what is found on the left; what is given on the right. -->
+    <div class="columns">
+      <div class="stack">
         <mat-form-field>
           <mat-label>{{ 'records.complaint' | translate }}</mat-label>
-          <textarea matInput rows="2" formControlName="complaint"></textarea>
+          <textarea
+            matInput
+            formControlName="complaint"
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="2"
+            cdkAutosizeMaxRows="6"
+          ></textarea>
         </mat-form-field>
-      </div>
 
-      <div class="field">
+        <mat-form-field>
+          <mat-label>{{ 'records.examination' | translate }}</mat-label>
+          <textarea
+            matInput
+            formControlName="examination"
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="2"
+            cdkAutosizeMaxRows="6"
+          ></textarea>
+        </mat-form-field>
+
         <mat-form-field>
           <mat-label>{{ 'records.diagnosis' | translate }}</mat-label>
-          <textarea matInput rows="3" formControlName="diagnosis"></textarea>
+          <textarea
+            matInput
+            formControlName="diagnosis"
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="2"
+            cdkAutosizeMaxRows="6"
+          ></textarea>
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>{{ 'records.requestedTests' | translate }}</mat-label>
+          <textarea
+            matInput
+            formControlName="requestedTests"
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="1"
+            cdkAutosizeMaxRows="4"
+          ></textarea>
         </mat-form-field>
       </div>
 
-      <div class="field">
-        <mat-form-field>
-          <mat-label>{{ 'records.treatment' | translate }}</mat-label>
-          <textarea matInput rows="3" formControlName="treatment"></textarea>
-        </mat-form-field>
-      </div>
+      <div class="stack">
+        <!-- Prescription: one line per drug - name, how to take it, for how long. -->
+        <section class="meds" formArrayName="medications">
+          <h3 class="meds-title">{{ 'records.prescription' | translate }}</h3>
 
-      <div class="field span-full">
+          @for (group of medications.controls; track group; let i = $index) {
+            <div class="med-row" [formGroupName]="i">
+              <div class="field med-name">
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>{{ 'records.medName' | translate }}</mat-label>
+                  <input matInput formControlName="name" autocomplete="off" />
+                </mat-form-field>
+                <ui-field-error [control]="group.controls.name" [submitted]="submitted()" />
+              </div>
+
+              <mat-form-field class="med-dosage" subscriptSizing="dynamic">
+                <mat-label>{{ 'records.medDosage' | translate }}</mat-label>
+                <input
+                  matInput
+                  formControlName="dosage"
+                  autocomplete="off"
+                  [placeholder]="'records.medDosageHint' | translate"
+                />
+              </mat-form-field>
+
+              <mat-form-field class="med-duration" subscriptSizing="dynamic">
+                <mat-label>{{ 'records.medDuration' | translate }}</mat-label>
+                <input
+                  matInput
+                  formControlName="duration"
+                  autocomplete="off"
+                  [placeholder]="'records.medDurationHint' | translate"
+                />
+              </mat-form-field>
+
+              <button
+                mat-icon-button
+                type="button"
+                class="med-remove"
+                [attr.aria-label]="'records.removeMedication' | translate"
+                (click)="removeMedication(i)"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          }
+
+          <div class="meds-actions">
+            <button mat-button type="button" (click)="addMedication()">
+              + {{ 'records.addMedication' | translate }}
+            </button>
+            @if (!showRxNote()) {
+              <button mat-button type="button" (click)="showRxNote.set(true)">
+                + {{ 'records.addPrescriptionNote' | translate }}
+              </button>
+            }
+          </div>
+
+          @if (showRxNote()) {
+            <mat-form-field>
+              <mat-label>{{ 'records.prescriptionNote' | translate }}</mat-label>
+              <textarea
+                matInput
+                formControlName="prescriptionNote"
+                cdkTextareaAutosize
+                cdkAutosizeMinRows="2"
+                cdkAutosizeMaxRows="6"
+              ></textarea>
+            </mat-form-field>
+          }
+        </section>
+
         <mat-form-field>
-          <mat-label>{{ 'records.prescription' | translate }}</mat-label>
-          <textarea matInput rows="3" formControlName="prescription"></textarea>
+          <mat-label>{{ 'records.instructions' | translate }}</mat-label>
+          <textarea
+            matInput
+            formControlName="treatment"
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="2"
+            cdkAutosizeMaxRows="6"
+          ></textarea>
         </mat-form-field>
       </div>
     </div>
 
-    <fieldset class="vitals">
-      <legend class="text-label">{{ 'records.vitals' | translate }}</legend>
-      <div class="form-grid cols-2">
-        <mat-form-field class="field-compact">
-          <mat-label>{{ 'records.bloodPressure' | translate }}</mat-label>
-          <input matInput type="text" formControlName="bloodPressure" placeholder="120/80" />
-        </mat-form-field>
-
-        <mat-form-field class="field-compact">
-          <mat-label>{{ 'records.temperature' | translate }}</mat-label>
-          <input matInput type="number" step="0.1" formControlName="temperature" />
-          <span matTextSuffix>°C</span>
-        </mat-form-field>
-
-        <mat-form-field class="field-compact">
-          <mat-label>{{ 'records.pulse' | translate }}</mat-label>
-          <input matInput type="number" formControlName="pulse" />
-          <span matTextSuffix>bpm</span>
-        </mat-form-field>
-
-        <mat-form-field class="field-compact">
-          <mat-label>{{ 'records.weight' | translate }}</mat-label>
-          <input matInput type="number" step="0.1" formControlName="weight" />
-          <span matTextSuffix>kg</span>
-        </mat-form-field>
-      </div>
-    </fieldset>
-
-    <mat-form-field>
-      <mat-label>{{ 'common.filter' | translate }}</mat-label>
-      <mat-chip-grid #tagGrid>
-        @for (tag of tags(); track tag) {
-          <mat-chip-row (removed)="removeTag(tag)">
-            {{ tag }}
-            <button matChipRemove [attr.aria-label]="'common.delete' | translate">
-              <ui-icon name="close" size="sm" />
-            </button>
-          </mat-chip-row>
+    <!-- Follow-up: one tap for the usual intervals, a date picker for anything else. -->
+    <section class="follow-up">
+      <div class="follow-up-chips" role="group" [attr.aria-label]="'records.followUpDate' | translate">
+        <span class="follow-up-label">{{ 'records.followUpDate' | translate }}</span>
+        @for (preset of followUpPresets; track preset.days) {
+          <button type="button" class="quick-chip" (click)="setFollowUp(preset.days)">
+            {{ preset.label | translate }}
+          </button>
         }
-      </mat-chip-grid>
-      <input
-        [matChipInputFor]="tagGrid"
-        [matChipInputAddOnBlur]="true"
-        (matChipInputTokenEnd)="addTag($event)"
-      />
-    </mat-form-field>
+        @if (form.controls.followUpDate.value) {
+          <button type="button" class="quick-chip quick-chip-clear" (click)="setFollowUp(null)">
+            {{ 'records.noFollowUp' | translate }}
+          </button>
+        }
+      </div>
+
+      <div class="follow-up-fields" [class.has-doctor]="showDoctor">
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>{{ 'records.followUpDate' | translate }}</mat-label>
+          <input
+            matInput
+            readonly
+            formControlName="followUpDate"
+            [matDatepicker]="followUpPicker"
+            [min]="minFollowUp"
+            (click)="followUpPicker.open()"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="followUpPicker" />
+          <mat-datepicker #followUpPicker />
+        </mat-form-field>
+
+        @if (showDoctor) {
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'appointments.doctor' | translate }}</mat-label>
+            <mat-select formControlName="doctorId">
+              <mat-option [value]="null">{{ 'common.notSet' | translate }}</mat-option>
+              @for (doctor of data.doctors; track doctor.id) {
+                <mat-option [value]="doctor.id">{{ doctor.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+      </div>
+    </section>
+
+    <!-- Vitals are optional and not taken at every visit, so they stay folded away. -->
+    <section class="vitals-section">
+      <button mat-button type="button" class="vitals-toggle" (click)="showVitals.set(!showVitals())">
+        <ui-icon name="vitals" size="sm" />
+        {{ 'records.vitals' | translate }}
+        <span class="text-subtle">({{ 'common.optional' | translate }})</span>
+      </button>
+
+      @if (showVitals()) {
+        <div class="vitals-grid">
+          <mat-form-field class="field-compact">
+            <mat-label>{{ 'records.bloodPressure' | translate }}</mat-label>
+            <input matInput type="text" formControlName="bloodPressure" placeholder="120/80" dir="ltr" />
+          </mat-form-field>
+
+          <mat-form-field class="field-compact">
+            <mat-label>{{ 'records.temperature' | translate }}</mat-label>
+            <input matInput type="number" step="0.1" formControlName="temperature" />
+            <span matTextSuffix>°C</span>
+          </mat-form-field>
+
+          <mat-form-field class="field-compact">
+            <mat-label>{{ 'records.pulse' | translate }}</mat-label>
+            <input matInput type="number" formControlName="pulse" />
+          </mat-form-field>
+
+          <mat-form-field class="field-compact">
+            <mat-label>{{ 'records.bloodSugar' | translate }}</mat-label>
+            <input matInput type="number" formControlName="bloodSugar" />
+            <span matTextSuffix>mg/dL</span>
+          </mat-form-field>
+
+          <mat-form-field class="field-compact">
+            <mat-label>{{ 'records.oxygenSaturation' | translate }}</mat-label>
+            <input matInput type="number" formControlName="oxygenSaturation" />
+            <span matTextSuffix>%</span>
+          </mat-form-field>
+
+          <mat-form-field class="field-compact">
+            <mat-label>{{ 'records.weight' | translate }}</mat-label>
+            <input matInput type="number" step="0.1" formControlName="weight" />
+            <span matTextSuffix>kg</span>
+          </mat-form-field>
+        </div>
+      }
+    </section>
   </form>
 </mat-dialog-content>
 
@@ -165,7 +328,10 @@
   <button mat-button type="button" (click)="dialogRef.close(false)">
     {{ 'common.cancel' | translate }}
   </button>
-  <button mat-flat-button type="button" (click)="submit()">
-    {{ 'common.save' | translate }}
-  </button>
+  @if (data.canInvoice && !isEdit) {
+    <button mat-stroked-button type="button" (click)="submit(true)">
+      {{ 'records.saveAndInvoice' | translate }}
+    </button>
+  }
+  <button mat-flat-button type="button" (click)="submit()">{{ 'common.save' | translate }}</button>
 </mat-dialog-actions>

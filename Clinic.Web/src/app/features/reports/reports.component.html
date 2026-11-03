@@ -1,192 +1,168 @@
-<div class="page">
-  <ui-page-header title="reports.title" subtitle="reports.subtitle" icon="reports">
-    <div actions class="head-actions">
-      <button mat-stroked-button type="button" (click)="print()">
-        <ui-icon name="print" size="sm" />
-        {{ 'common.print' | translate }}
-      </button>
-      @if (permissions.can('reports.export')) {
-        <button mat-flat-button type="button" (click)="exportCsv()">
-          <ui-icon name="download" size="sm" />
-          {{ 'reports.exportCsv' | translate }}
-        </button>
-      }
-    </div>
-  </ui-page-header>
+ <section class="reports">
+  <!-- ------------------------------------------------------------ header -->
+  <header class="head">
+    <h1>{{ titleKey() | translate }}</h1>
 
-  <!-- One period control scoping every figure below. -->
-  <div class="filters surface">
-    <mat-form-field class="field-compact date">
-      <mat-label>{{ 'common.startDate' | translate }}</mat-label>
+    <div class="head-actions">
+      <button mat-stroked-button type="button" (click)="print()">
+        <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path [attr.d]="icons.print" />
+        </svg>
+        {{ 'reports.print' | translate }}
+      </button>
+      <button mat-stroked-button type="button" (click)="exportCsv()">
+        <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path [attr.d]="icons.download" />
+        </svg>
+        {{ 'reports.exportCsv' | translate }}
+      </button>
+    </div>
+  </header>
+
+  <!-- --------------------------------------------------- print-only header -->
+  <div class="print-head">
+    <strong>{{ titleKey() | translate }}</strong>
+    <span>{{ 'reports.period' | translate }}: {{ periodLabel() }}</span>
+    <span>{{ 'reports.generated' | translate }}: {{ generatedOn() }}</span>
+  </div>
+
+  <!-- ------------------------------------------------- what this report is -->
+  <aside class="banner" role="note">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.info" /></svg>
+    <p>{{ subtitleKey() | translate }}</p>
+  </aside>
+
+  <!-- ------------------------------------------------------------ filters -->
+  <section class="filters" [attr.aria-label]="'reports.period' | translate">
+    <mat-form-field class="date" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ 'reports.from' | translate }}</mat-label>
       <input
         matInput
-        readonly
-        [value]="from()"
         [matDatepicker]="fromPicker"
+        [value]="draftFrom()"
+        [max]="draftTo()"
         (dateChange)="setFrom($event.value)"
-        (click)="fromPicker.open()"
       />
-      <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+      <mat-datepicker-toggle matIconPrefix [for]="fromPicker" />
       <mat-datepicker #fromPicker />
     </mat-form-field>
 
-    <mat-form-field class="field-compact date">
-      <mat-label>{{ 'common.endDate' | translate }}</mat-label>
+    <mat-form-field class="date" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ 'reports.to' | translate }}</mat-label>
       <input
         matInput
-        readonly
-        [value]="to()"
         [matDatepicker]="toPicker"
+        [value]="draftTo()"
+        [min]="draftFrom()"
         (dateChange)="setTo($event.value)"
-        (click)="toPicker.open()"
       />
-      <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+      <mat-datepicker-toggle matIconPrefix [for]="toPicker" />
       <mat-datepicker #toPicker />
     </mat-form-field>
 
-    <div class="quick">
-      <button mat-button type="button" (click)="quickRange(7)">
-        {{ 'common.thisWeek' | translate }}
-      </button>
-      <button mat-button type="button" (click)="thisMonth()">
-        {{ 'common.thisMonth' | translate }}
-      </button>
-      <button mat-button type="button" (click)="quickRange(30)">
-        {{ 'common.last30Days' | translate }}
-      </button>
-    </div>
-  </div>
+    <button mat-flat-button type="button" class="search-btn" (click)="search()">
+      <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path [attr.d]="icons.search" />
+      </svg>
+      {{ 'common.search' | translate }}
+    </button>
 
-  @if (!loading() && !hasData()) {
-    <ui-empty-state icon="reports" title="reports.empty" message="reports.emptyHint" />
-  } @else {
-    <section class="stats">
-      <ui-stat-card
-        label="reports.newPatients"
-        icon="userAdd"
-        tone="primary"
-        [value]="newPatients()"
-        [loading]="loading()"
-      />
-      <ui-stat-card
-        label="reports.returningPatients"
-        icon="patients"
-        tone="info"
-        [value]="returningPatients()"
-        [loading]="loading()"
-      />
-      <ui-stat-card
-        label="appointments.title"
-        icon="appointments"
-        tone="neutral"
-        [value]="totalAppointments()"
-        [loading]="loading()"
-      />
-      <ui-stat-card
-        label="reports.completionRate"
-        icon="success"
-        tone="success"
-        unit="%"
-        [value]="completionRate()"
-        [loading]="loading()"
-      />
-    </section>
-
-    @if (permissions.can('accounts.view')) {
-      <section class="stats">
-        <ui-stat-card
-          label="accounts.income"
-          icon="money"
-          tone="success"
-          [value]="totals().income"
-          [unit]="currency()"
-        />
-        <ui-stat-card
-          label="accounts.expenses"
-          icon="expense"
-          tone="warning"
-          [value]="totals().expenses"
-          [unit]="currency()"
-        />
-        <ui-stat-card
-          label="accounts.netProfit"
-          icon="savings"
-          tone="primary"
-          [value]="totals().net"
-          [unit]="currency()"
-        />
-        <ui-stat-card
-          label="reports.averageRevenue"
-          icon="currency"
-          tone="info"
-          [value]="averageRevenue()"
-          [unit]="currency()"
-        />
-      </section>
-    }
-
-    <section class="charts">
-      <ui-card title="reports.appointmentsReport" subtitle="reports.period">
-        <ui-chart
-          type="column"
-          tone="primary"
-          caption="reports.appointmentsReport"
-          [points]="appointmentTrend()"
-        />
-      </ui-card>
-
-      @if (permissions.can('accounts.view')) {
-        <ui-card title="reports.revenueReport" subtitle="reports.period">
-          <ui-chart
-            type="line"
-            tone="accent"
-            caption="reports.revenueReport"
-            [unit]="currency()"
-            [points]="revenueTrend()"
-          />
-        </ui-card>
+    <div class="chips" role="group">
+      @for (p of presets; track p.id) {
+        <button
+          type="button"
+          class="chip"
+          [class.on]="preset() === p.id"
+          [attr.aria-pressed]="preset() === p.id"
+          (click)="applyPreset(p.id)"
+        >
+          {{ p.key | translate }}
+        </button>
       }
-    </section>
+    </div>
+  </section>
 
-    <section class="insight-row">
-      <div class="insight surface">
-        <span class="icon-tile icon-tile-primary"><ui-icon name="appointments" size="md" /></span>
-        <div>
-          <span class="text-label">{{ 'reports.busiestDay' | translate }}</span>
-          <strong>{{ busiestDay() }}</strong>
+  <!-- ===================================================== THE REPORT -->
+  @if (view(); as v) {
+    <div class="body">
+      @if (hasData()) {
+        <!-- Row search + count -------------------------------------------- -->
+        <div class="tools">
+          <label class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.search" /></svg>
+            <input
+              type="search"
+              [value]="query()"
+              (input)="setQuery($event)"
+              [placeholder]="'reports.searchRows' | translate"
+            />
+          </label>
+          <span class="note">{{ note() }}</span>
         </div>
-      </div>
-      <div class="insight surface">
-        <span class="icon-tile icon-tile-info"><ui-icon name="clock" size="md" /></span>
-        <div>
-          <span class="text-label">{{ 'reports.busiestHour' | translate }}</span>
-          <strong>{{ busiestHour() }}</strong>
-        </div>
-      </div>
-      <div class="insight surface">
-        <span class="icon-tile icon-tile-success"><ui-icon name="records" size="md" /></span>
-        <div>
-          <span class="text-label">{{ 'records.title' | translate }}</span>
-          <strong>{{ recordCount() }}</strong>
-        </div>
-      </div>
-      <div class="insight surface">
-        <span class="icon-tile icon-tile-warning"><ui-icon name="patients" size="md" /></span>
-        <div>
-          <span class="text-label">{{ 'patients.title' | translate }}</span>
-          <strong>{{ totalPatients() }}</strong>
-        </div>
-      </div>
-    </section>
 
-    <ui-card title="reports.doctorPerformance" icon="doctors" [padded]="false">
-      <ui-data-table
-        [columns]="performanceColumns"
-        [rows]="performance()"
-        [loading]="loading()"
-        emptyTitle="reports.empty"
-        emptyMessage="reports.emptyHint"
-      />
-    </ui-card>
+        <!-- One card per part of the table -------------------------------- -->
+        @for (s of sections(); track $index) {
+          @if (s.title) {
+            <h2 class="section-title">{{ s.title | translate }}</h2>
+          }
+
+          <article class="card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    @for (c of v.columns; track c.header) {
+                      <th scope="col" [class.end]="c.align === 'end'">{{ c.header | translate }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of s.rows; track $index) {
+                    @if (row.kind === 'heading') {
+                      <tr class="group">
+                        <td [attr.colspan]="v.columns.length">{{ row.cells[0] + '' | translate }}</td>
+                      </tr>
+                    } @else if (row.kind === 'total') {
+                      <tr class="total">
+                        @for (cell of row.cells; track $index; let i = $index) {
+                          <td [class.end]="v.columns[i].align === 'end'" [class.neg]="isNegative(cell)">
+                            <strong>{{ cell }}</strong>
+                          </td>
+                        }
+                      </tr>
+                    } @else {
+                      <tr>
+                        @for (cell of row.cells; track $index; let i = $index) {
+                          <td
+                            [class.end]="v.columns[i].align === 'end'"
+                            [class.strong]="v.columns[i].strong"
+                            [class.neg]="isNegative(cell)"
+                          >
+                            {{ cell }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          </article>
+        } @empty {
+          <div class="card empty">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.records" /></svg>
+            <p>{{ 'reports.empty' | translate }}</p>
+          </div>
+        }
+      } @else {
+        <div class="card empty">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.records" /></svg>
+          <p>{{ 'reports.empty' | translate }}</p>
+        </div>
+      }
+    </div>
   }
-</div>
+
+  <!-- ---------------------------------------------------------- footnote -->
+  <p class="foot">{{ 'reports.period' | translate }}: {{ periodLabel() }}</p>
+</section>

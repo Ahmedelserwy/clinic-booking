@@ -1,6 +1,14 @@
 import { Permission } from '../core/authz/permission.model';
 import { IconName } from '../shared/ui/icon/icon.registry';
 
+export interface NavChild {
+  /** Translation key. */
+  label: string;
+  route: string;
+  /** Shown only if the user holds at least one of these. Empty = always. */
+  permissions: Permission[];
+}
+
 export interface NavItem {
   /** Translation key. */
   label: string;
@@ -8,6 +16,12 @@ export interface NavItem {
   route: string;
   /** Shown only if the user holds at least one of these. Empty = always. */
   permissions: Permission[];
+  /**
+   * Sub-pages. When present the item becomes an expandable heading: clicking it
+   * toggles the list instead of navigating, and `route` is only used to know
+   * when the branch is active.
+   */
+  children?: NavChild[];
 }
 
 export interface NavGroup {
@@ -44,7 +58,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'nav.patients', icon: 'patients', route: '/patients', permissions: ['patients.view'] },
       { label: 'nav.doctors', icon: 'doctors', route: '/doctors', permissions: ['doctors.view'] },
-      { label: 'nav.records', icon: 'records', route: '/records', permissions: ['records.view'] },
     ],
   },
   {
@@ -67,7 +80,48 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'nav.groupFinance',
     items: [
-      { label: 'nav.reports', icon: 'reports', route: '/reports', permissions: ['reports.view'] },
+      // Same permission as the /expenses route in app.routes.ts. The icon reuses 'reports'
+      // because it is known to exist in the icon registry; swap it for a dedicated one if you add it.
+      {
+        label: 'nav.expenses',
+        icon: 'reports',
+        route: '/expenses',
+        permissions: ['accounts.view'],
+      },
+      {
+        label: 'nav.reports',
+        icon: 'reports',
+        route: '/reports',
+        permissions: ['reports.view'],
+        // Labels reuse the `reports.<id>.title` keys, so both languages already have them.
+        children: [
+          {
+            label: 'reports.dailyClosing.title',
+            route: '/reports/dailyClosing',
+            permissions: ['reports.view'],
+          },
+          {
+            label: 'reports.collections.title',
+            route: '/reports/collections',
+            permissions: ['reports.view'],
+          },
+          {
+            label: 'reports.incomeExpenses.title',
+            route: '/reports/incomeExpenses',
+            permissions: ['reports.view'],
+          },
+          {
+            label: 'reports.profitability.title',
+            route: '/reports/profitability',
+            permissions: ['reports.view'],
+          },
+          {
+            label: 'reports.summary.title',
+            route: '/reports/summary',
+            permissions: ['reports.view'],
+          },
+        ],
+      },
     ],
   },
   {

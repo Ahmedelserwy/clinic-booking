@@ -50,23 +50,24 @@ export class AppointmentsService {
   }
 
   /**
-   * Moves an appointment along its lifecycle.
+   * Moves an appointment along its lifecycle: confirm, complete, cancel.
    *
-   * Goes through `PUT /Appointments/{id}`, not a status-only endpoint: the API
-   * has no `PATCH /Appointments/{id}/status`, which is what this used to call —
-   * it would have returned 405 the first time anything invoked it. Status is a
-   * member of `UpdateAppointmentDto`, so the update endpoint is the supported
-   * route, and it needs the whole record; see `toUpdateRequest`.
+   * Goes through `PUT /Appointments/{id}/status`, which changes the status and
+   * nothing else. It used to resend the whole record through
+   * `PUT /Appointments/{id}`, which re-runs the doctor, patient, working-hours
+   * and overlap checks meant for a booking that is moving — so an appointment
+   * that no longer passed them, or whose payload was rebuilt incompletely,
+   * could not even be cancelled and came back 400.
+   *
+   * `_fallbackDurationMinutes` is unused now; it stays so existing callers
+   * compile unchanged.
    */
   changeStatus(
     appointment: Appointment,
     status: AppointmentStatus,
-    fallbackDurationMinutes: number
+    _fallbackDurationMinutes?: number
   ): Observable<Appointment> {
-    return this.updateAppointment(appointment.id, {
-      ...toUpdateRequest(appointment, fallbackDurationMinutes),
-      status
-    });
+    return this.api.put<Appointment>(`Appointments/${appointment.id}/status`, { status });
   }
 
   /**
@@ -89,8 +90,22 @@ export class AppointmentsService {
     });
   }
 
-  cancelAppointment(id: number): Observable<void> {
+  /**
+   * Cancels an appointment by setting its status to `Cancelled`.
+   *
+   * The record is kept, so the calendar still shows it (muted) and counts it
+   * under "Cancelled". It used to `DELETE` the row, which made a cancelled
+   * booking vanish and left the Cancelled status unreachable from this path.
+   */
+  cancelAppointment(
+    appointment: Appointment,
+    fallbackDurationMinutes?: number
+  ): Observable<Appointment> {
+    return this.changeStatus(appointment, 'Cancelled', fallbackDurationMinutes);
+  }
+
+  /** Permanently removes the row. Not used by the UI's cancel flow. */
+  deleteAppointment(id: number): Observable<void> {
     return this.api.delete<void>(`Appointments/${id}`);
   }
 }
-

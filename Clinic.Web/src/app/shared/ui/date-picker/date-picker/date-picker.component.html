@@ -1,0 +1,115 @@
+<mat-form-field
+  class="dp-field"
+  cdkOverlayOrigin
+  #origin="cdkOverlayOrigin"
+  [class.mat-form-field-invalid]="invalid()"
+>
+  @if (label()) {
+    <mat-label>{{ label() | translate }}</mat-label>
+  }
+  <input
+    matInput
+    readonly
+    autocomplete="off"
+    [value]="display()"
+    [disabled]="disabled()"
+    (click)="toggle()"
+    (keydown.enter)="toggle()"
+    (keydown.arrowdown)="open()"
+  />
+  <button
+    matIconSuffix
+    mat-icon-button
+    type="button"
+    [disabled]="disabled()"
+    [attr.aria-label]="isArabic() ? 'اختيار التاريخ' : 'Choose date'"
+    (click)="toggle()"
+  >
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
+      <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+    </svg>
+  </button>
+</mat-form-field>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origin"
+  [cdkConnectedOverlayOpen]="isOpen()"
+  [cdkConnectedOverlayPositions]="positions"
+  [cdkConnectedOverlayPush]="true"
+  [cdkConnectedOverlayViewportMargin]="8"
+  (overlayOutsideClick)="onOutsideClick($event)"
+  (overlayKeydown)="onKeydown($event)"
+  (attach)="onAttach()"
+  (detach)="close()"
+>
+  <div class="dp-panel" role="dialog" [attr.aria-label]="label() | translate">
+    <div class="dp-title">{{ isArabic() ? 'الشهر' : 'Month' }}</div>
+    <div class="dp-months">
+      @for (name of monthNames(); track $index) {
+        <button
+          type="button"
+          class="dp-month"
+          [class.active]="$index === viewMonth()"
+          [disabled]="monthDisabled($index)"
+          (click)="selectMonth($index)"
+        >
+          {{ name }}
+        </button>
+      }
+    </div>
+
+    <div class="dp-body">
+      <div class="dp-days-wrap">
+        <div class="dp-title">{{ isArabic() ? 'اليوم' : 'Day' }}</div>
+        <div class="dp-weekdays">
+          @for (weekday of weekdays(); track $index) {
+            <span>{{ weekday }}</span>
+          }
+        </div>
+        <div class="dp-days">
+          @for (day of days(); track $index) {
+            @if (day === null) {
+              <span></span>
+            } @else {
+              <button
+                type="button"
+                class="dp-day"
+                [class.active]="isSelected(day)"
+                [class.today]="isToday(day)"
+                [disabled]="dayDisabled(day)"
+                [attr.aria-pressed]="isSelected(day)"
+                (click)="selectDay(day)"
+              >
+                {{ day }}
+              </button>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="dp-years-wrap">
+        <div class="dp-title">{{ isArabic() ? 'السنة' : 'Year' }}</div>
+        <div class="dp-years" #yearList>
+          @for (year of years(); track year) {
+            <button
+              type="button"
+              class="dp-year"
+              [class.active]="year === viewYear()"
+              (click)="selectYear(year)"
+            >
+              {{ year }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="dp-footer">
+      <button type="button" class="dp-clear" (click)="clear()">
+        {{ isArabic() ? 'مسح' : 'Clear' }}
+      </button>
+    </div>
+  </div>
+</ng-template>

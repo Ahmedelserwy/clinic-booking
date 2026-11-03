@@ -186,6 +186,10 @@ export class AvailabilityService {
         if (appointment.id === excludeAppointmentId) {
           return false;
         }
+        // A cancelled booking is kept on record but no longer holds its slot.
+        if (appointment.status === 'Cancelled') {
+          return false;
+        }
         const when = parseDate(appointment.appointmentDate);
         if (!when || !isSameDay(when, date)) {
           return false;

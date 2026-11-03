@@ -1,13 +1,14 @@
 // Uses the app's theme tokens where they exist, with fallbacks, so the screen
 // follows light/dark mode and still renders if a token is renamed.
 :host {
-  --qd-primary: var(--c-primary, #0f766e);
-  --qd-soft: var(--c-primary-soft, #d9efeb);
+  --qd-primary: var(--c-button, #12284b);
+  --qd-soft: var(--c-primary-soft, #e3ebf8);
   --qd-surface: var(--c-surface, #ffffff);
-  --qd-bg: var(--c-surface-2, #eef5f3);
-  --qd-text: var(--c-text, #12302b);
-  --qd-muted: var(--c-text-muted, #6b8580);
-  --qd-border: var(--c-border, #dbe8e5);
+  --qd-bg: var(--c-surface-2, #eef3fa);
+  --qd-text: var(--c-text, #0f2540);
+  --qd-muted: var(--c-text-muted, #4a5b73);
+  --qd-border: var(--c-border, #e2e8f0);
+  --qd-shadow: 0 8px 30px rgb(15 37 64 / 10%);
   --tip-ms: 6s; // keep in sync with TIP_MS in the component
 
   display: block;
@@ -15,6 +16,16 @@
   overflow: hidden;
   background: var(--qd-bg);
   color: var(--qd-text);
+}
+
+// Emoji must render in colour: without an emoji font in the stack, the Arabic
+// font falls through to a monochrome symbol font and some glyphs (the door)
+// show up as an empty outlined box.
+.logo,
+.avatar,
+.icon,
+.number {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 .screen {
@@ -29,7 +40,7 @@
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: 26px;
-  box-shadow: 0 8px 30px rgb(15 118 110 / 10%);
+  box-shadow: var(--qd-shadow);
 }
 
 // ------------------------------------------------------------------ header --
@@ -75,7 +86,7 @@
   border-radius: 99px;
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
-  box-shadow: 0 8px 30px rgb(15 118 110 / 10%);
+  box-shadow: var(--qd-shadow);
 
   span {
     color: var(--qd-muted);
@@ -330,7 +341,10 @@
   padding: 30px;
   overflow: hidden;
   border: 0;
-  background: linear-gradient(160deg, var(--qd-primary), color-mix(in srgb, var(--qd-primary) 60%, #000));
+  // Same navy as the sidebar and the login brand panel.
+  background:
+    radial-gradient(90% 70% at 15% 10%, rgb(59 130 246 / 22%), transparent 62%),
+    linear-gradient(160deg, #1b3a68 0%, #12284b 55%, #0b1b30 100%);
   color: #fff;
   text-align: center;
 }
@@ -383,14 +397,17 @@
     animation: bob 2s ease-in-out infinite;
   }
 
+  // The global h1 colour is the dark text token, which is unreadable on navy.
   h1 {
     margin: 12px 0 8px;
     font-size: clamp(28px, 3vw, 46px);
+    color: #fff;
   }
 
   p {
     margin: 0;
     font-size: clamp(17px, 1.6vw, 24px);
+    color: #fff;
     opacity: 0.85;
   }
 }
@@ -447,7 +464,7 @@
     display: block;
     height: 100%;
     width: 0;
-    background: #5eead4;
+    background: #8db5ec;
     animation: fill var(--tip-ms) linear forwards;
   }
 }

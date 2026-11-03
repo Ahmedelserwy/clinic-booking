@@ -4,6 +4,7 @@
 }
 
 .table-shell {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--c-surface);
@@ -146,7 +147,7 @@ tbody tr:hover {
 }
 
 // -----------------------------------------------------------------------------
-// Row actions — revealed on hover on pointer devices, always shown on touch.
+// Row actions - always visible, so nobody has to discover them by hovering.
 // -----------------------------------------------------------------------------
 .row-actions {
   display: inline-flex;
@@ -174,43 +175,230 @@ tbody tr:hover {
   background: var(--c-danger-soft);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .row-actions {
-    opacity: 0;
-    transition: opacity var(--dur-micro) var(--ease-standard);
-  }
+// -----------------------------------------------------------------------------
+// Loading
+// -----------------------------------------------------------------------------
+// First load: placeholder rows with a soft shimmer. They use the surface tokens,
+// so they follow light and dark mode.
+tbody tr.skeleton-row:hover {
+  background: transparent;
+}
 
-  tr:hover .row-actions,
-  tr:focus-within .row-actions {
+.skeleton-row .cell-stack {
+  width: 100%;
+}
+
+.sk {
+  display: block;
+  height: 12px;
+  border-radius: var(--r-xs);
+  background: linear-gradient(
+    90deg,
+    var(--c-surface-3) 25%,
+    var(--c-surface-2) 50%,
+    var(--c-surface-3) 75%
+  );
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.4s linear infinite;
+}
+
+.sk-line-sm {
+  height: 9px;
+  margin-block-start: 6px;
+}
+
+.sk-pill {
+  width: 72px;
+  height: 22px;
+  border-radius: var(--r-full);
+}
+
+.sk-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+@keyframes sk-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+// Reloading with rows already on screen: keep them, dim them a little, and run a
+// thin line along the top of the table.
+.row-reloading {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+
+.table-progress {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  z-index: calc(var(--z-sticky) + 1);
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  animation: loader-in 0.2s ease 0.15s forwards;
+}
+
+.table-progress::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -40%;
+  width: 40%;
+  border-radius: var(--r-full);
+  background: var(--c-primary);
+  animation: progress-run 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-run {
+  to {
+    inset-inline-start: 100%;
+  }
+}
+
+@keyframes loader-in {
+  to {
     opacity: 1;
   }
 }
 
-// -----------------------------------------------------------------------------
-// Loading
-// -----------------------------------------------------------------------------
-.skeleton-cell {
-  display: block;
-  height: 12px;
-  width: 72%;
-  border-radius: var(--r-full);
-}
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    animation: none;
+  }
 
-.skeleton-cell.short {
-  width: 28px;
-  margin-inline-start: auto;
-}
-
-.skeleton-row:hover {
-  background: transparent;
+  .table-progress::before {
+    inset-inline-start: 0;
+    width: 100%;
+    opacity: 0.55;
+    animation: none;
+  }
 }
 
 // -----------------------------------------------------------------------------
 // Footer
 // -----------------------------------------------------------------------------
-.table-paginator {
+.table-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
   border-block-start: 1px solid var(--c-border);
   background: var(--c-surface-2);
+}
+
+.table-total {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.table-total strong {
+  color: var(--c-text);
+  font-weight: var(--fw-semibold);
+}
+
+.pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pager-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--r-md, 10px);
+  background: none;
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-micro) var(--ease-standard),
+    color var(--dur-micro) var(--ease-standard);
+}
+
+.pager-btn:hover:not(:disabled):not(.pager-current) {
+  background: var(--c-surface-3);
+}
+
+.pager-btn:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 1px;
+}
+
+.pager-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pager-arrow {
+  border-color: var(--c-border);
+  background: var(--c-surface);
+}
+
+// Same deep navy as the "new patient" button (the text colour); it inverts in dark mode so it stays visible.
+.pager-current {
+  background: var(--c-text);
+  color: var(--c-surface);
+  font-weight: var(--fw-semibold);
+  cursor: default;
+}
+
+.pager-gap {
+  min-width: 20px;
+  text-align: center;
+  color: var(--c-text-muted);
+}
+
+// The chevrons are drawn for left-to-right; flip them when the page is right-to-left.
+:host-context([dir='rtl']) .pager-arrow svg {
+  transform: scaleX(-1);
+}
+
+.page-size {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.page-size select {
+  height: 34px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md, 10px);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .table-footer {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .page-size {
+    justify-self: center;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -273,6 +461,10 @@ tbody tr:hover {
     text-align: start !important;
   }
 
+  .skeleton-row .cell-stack {
+    width: 55%;
+  }
+
   tbody td::before {
     content: attr(data-label);
     flex: 0 0 auto;
@@ -285,9 +477,5 @@ tbody tr:hover {
     width: auto;
     justify-content: flex-end;
     padding-block-start: var(--sp-2);
-  }
-
-  .row-actions {
-    opacity: 1;
   }
 }

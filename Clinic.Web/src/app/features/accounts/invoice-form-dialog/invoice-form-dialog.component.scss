@@ -1,8 +1,10 @@
+// Material dialogs cap width at 80vw; stay under it so nothing overflows.
 .invoice-form {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-  width: min(760px, 88vw);
+  width: min(560px, 76vw);
+  max-width: 100%;
   padding-block-start: var(--sp-1);
 }
 
@@ -12,129 +14,8 @@
   min-width: 0;
 }
 
-// -----------------------------------------------------------------------------
-// Line items
-// -----------------------------------------------------------------------------
-.items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  padding: var(--sp-3);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  background: var(--c-surface-2);
-}
-
-.items-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-}
-
-.item-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.item-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-}
-
-.grow {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.qty {
-  flex: 0 0 92px;
-}
-
-.price {
-  flex: 0 0 132px;
-}
-
-.remove {
-  flex: 0 0 auto;
-  color: var(--c-text-subtle);
-}
-
-.remove:hover:not(:disabled) {
-  color: var(--c-danger);
-}
-
-// -----------------------------------------------------------------------------
-// Totals
-// -----------------------------------------------------------------------------
-.totals {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
-  gap: var(--sp-4);
-  align-items: start;
-}
-
-.totals-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-3);
-}
-
-.totals-summary {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  margin: 0;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  background: var(--c-surface);
-  font-variant-numeric: tabular-nums;
-}
-
-.totals-summary div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-4);
-}
-
-.totals-summary dt {
-  font-size: var(--fs-xs);
-  color: var(--c-text-muted);
-}
-
-.totals-summary dd {
-  margin: 0;
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-}
-
-.grand {
-  padding-block-start: var(--sp-2);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.grand dt,
-.grand dd {
-  font-size: var(--fs-md) !important;
-  font-weight: var(--fw-semibold) !important;
-  color: var(--c-text) !important;
-}
-
 @media (max-width: 700px) {
-  .item-row {
-    flex-wrap: wrap;
-  }
-
-  .qty,
-  .price {
-    flex: 1 1 40%;
-  }
-
-  .totals {
-    grid-template-columns: minmax(0, 1fr);
+  .invoice-form {
+    width: 100%;
   }
 }

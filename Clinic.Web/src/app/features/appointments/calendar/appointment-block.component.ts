@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-
-import { formatTime12 } from '../../../core/utils/date.util';
+import { LocaleService } from '../../../core/i18n/locale.service';
+import { minutesToDate } from '../../../core/utils/date.util';
 import { statusConfig } from '../../../core/utils/appointment-status.util';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { PositionedItem } from './calendar.model';
@@ -17,6 +17,12 @@ import { PositionedItem } from './calendar.model';
  * Status is carried by an icon and a word as well as a colour. Colour alone
  * fails for the ~8% of men with a colour vision deficiency, and this is a screen
  * where confusing "cancelled" with "confirmed" wastes a patient's morning.
+ *
+ * The patient's name is the most important line, so it gets priority for space:
+ * the doctor line (already implied by the column in day view) only appears once
+ * the block is tall enough, the name may wrap onto a second line when there is
+ * room, and even the compact one-row layout keeps the name. The full name is
+ * always available as a tooltip.
  */
 @Component({
   selector: 'app-appointment-block',
@@ -39,9 +45,11 @@ import { PositionedItem } from './calendar.model';
       [class.block-draggable]="draggable()"
       [style.--block-accent]="config().accent"
       [style.--block-surface]="config().surface"
+      [style.--name-lines]="nameLines()"
       role="button"
       [attr.tabindex]="0"
       [attr.aria-label]="ariaLabel()"
+      [attr.title]="item().appointment.patientName"
       (click)="open.emit()"
       (keydown.enter)="onActivate($event)"
       (keydown.space)="onActivate($event)"
@@ -53,13 +61,14 @@ import { PositionedItem } from './calendar.model';
         {{ timeRange() }}
       </span>
 
-      @if (!compact()) {
-        <span class="block-patient">{{ item().appointment.patientName }}</span>
-        <span class="block-doctor">{{ item().appointment.doctorName }}</span>
+      <span class="block-patient">{{ item().appointment.patientName }}</span>
 
-        @if (showStatus()) {
-          <span class="block-status">{{ config().label | translate }}</span>
-        }
+      @if (showDoctor()) {
+        <span class="block-doctor">{{ item().appointment.doctorName }}</span>
+      }
+
+      @if (showStatus()) {
+        <span class="block-status">{{ config().label | translate }}</span>
       }
     </div>
   `,
@@ -77,10 +86,14 @@ import { PositionedItem } from './calendar.model';
       flex-direction: column;
       gap: 1px;
       height: 100%;
-      padding: 5px var(--sp-2) 5px calc(var(--sp-2) + 3px);
-      border: 1px solid color-mix(in srgb, var(--block-accent) 32%, transparent);
+      padding: 5px var(--sp-2) 5px calc(var(--sp-2) + 5px);
+      border: 1px solid color-mix(in srgb, var(--block-accent) 48%, transparent);
       border-radius: var(--r-sm);
-      background: var(--block-surface);
+      /* The status surface alone is a pastel that vanishes on a white working
+         band; pulling in the accent gives each status a body colour you can read
+         across the room, and still follows the theme. */
+      background: color-mix(in srgb, var(--block-accent) 17%, var(--block-surface));
+      box-shadow: 0 1px 2px color-mix(in srgb, var(--block-accent) 28%, transparent);
       color: var(--c-text);
       overflow: hidden;
       text-align: start;
@@ -93,11 +106,12 @@ import { PositionedItem } from './calendar.model';
     /* The padding above is physical-start on purpose — mirrored here rather than
        written as a logical property so the rail and its inset stay in step. */
     :host-context(html[dir='rtl']) .block {
-      padding: 5px calc(var(--sp-2) + 3px) 5px var(--sp-2);
+      padding: 5px calc(var(--sp-2) + 5px) 5px var(--sp-2);
     }
 
     .block:hover {
       box-shadow: var(--sh-raised);
+      background: color-mix(in srgb, var(--block-accent) 24%, var(--block-surface));
     }
 
     .block:focus-visible {
@@ -111,7 +125,7 @@ import { PositionedItem } from './calendar.model';
       position: absolute;
       inset-block: 0;
       inset-inline-start: 0;
-      width: 3px;
+      width: 5px;
       background: var(--block-accent);
     }
 
@@ -119,9 +133,10 @@ import { PositionedItem } from './calendar.model';
       display: flex;
       align-items: center;
       gap: 4px;
+      flex: 0 0 auto;
       font-size: var(--fs-2xs);
-      font-weight: var(--fw-semibold);
-      color: color-mix(in srgb, var(--block-accent) 78%, var(--c-text));
+      font-weight: var(--fw-bold);
+      color: color-mix(in srgb, var(--block-accent) 70%, var(--c-text));
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
@@ -130,17 +145,24 @@ import { PositionedItem } from './calendar.model';
       flex: 0 0 auto;
     }
 
+    /* The name wraps (up to --name-lines lines) instead of being cut to one
+       line, so a full name is readable whenever the block has the height. */
     .block-patient {
+      min-width: 0;
       font-size: var(--fs-sm);
-      font-weight: var(--fw-semibold);
+      font-weight: var(--fw-bold);
       line-height: var(--lh-tight);
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: var(--name-lines, 1);
+      line-clamp: var(--name-lines, 1);
     }
 
     .block-doctor,
     .block-status {
+      flex: 0 0 auto;
       font-size: var(--fs-2xs);
       color: var(--c-text-muted);
       overflow: hidden;
@@ -154,7 +176,8 @@ import { PositionedItem } from './calendar.model';
       color: color-mix(in srgb, var(--block-accent) 70%, var(--c-text-muted));
     }
 
-    /* Too short for three lines: the time and the icon are what still has to fit. */
+    /* One row tall: time and name sit side by side, and the name takes whatever
+       width the time leaves. */
     .block-compact {
       flex-direction: row;
       align-items: center;
@@ -162,13 +185,21 @@ import { PositionedItem } from './calendar.model';
       padding-block: 2px;
     }
 
-    .block-narrow .block-doctor {
-      display: none;
+    .block-compact .block-patient {
+      flex: 1 1 0;
+      display: block;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    /* Overlapping appointments share the lane width; keep the time off the name. */
+    .block-narrow .block-time {
+      font-size: var(--fs-2xs);
     }
 
     /* Cancelled and completed recede: they are history, not today's plan. */
     .block-muted {
-      opacity: 0.68;
+      opacity: 0.74;
     }
 
     .block-muted .block-patient {
@@ -193,6 +224,8 @@ import { PositionedItem } from './calendar.model';
   `,
 })
 export class AppointmentBlockComponent {
+  private readonly locale = inject(LocaleService);
+
   readonly item = input.required<PositionedItem>();
   readonly draggable = input(false);
 
@@ -200,12 +233,18 @@ export class AppointmentBlockComponent {
 
   protected readonly config = computed(() => statusConfig(this.item().appointment.status));
 
-  /** One row of grid is 56px; below ~46 there is no room for a second line. */
+  /** Under ~46px there is only room for one row: time and name side by side. */
   protected readonly compact = computed(() => this.item().heightPx < 46);
 
-  /** The status word needs a fourth line, which only a 60-minute block has. */
+  /** Two lines for the name once there is room for them under the time. */
+  protected readonly nameLines = computed(() => (this.item().heightPx >= 70 ? 2 : 1));
+
+  /** The doctor is the column header in day view, so it only earns a line in taller blocks. */
+  protected readonly showDoctor = computed(() => !this.compact() && this.item().heightPx >= 88);
+
+  /** The status word needs its own line below a two-line name. */
   protected readonly showStatus = computed(
-    () => this.item().heightPx >= 88 && this.item().clusterSize === 1
+    () => this.item().heightPx >= 104 && this.item().clusterSize === 1
   );
 
   protected readonly muted = computed(() => {
@@ -215,14 +254,21 @@ export class AppointmentBlockComponent {
 
   protected readonly timeRange = computed(() => {
     const item = this.item();
-    return `${formatTime12(item.startMinutes)} – ${formatTime12(item.endMinutes)}`;
+    const locale = this.locale.definition().locale;
+    const format = (minutes: number) =>
+      minutesToDate(minutes).toLocaleTimeString(locale, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    return `${format(item.startMinutes)} – ${format(item.endMinutes)}`;
   });
 
   /**
    * Everything the block shows, in one string.
    *
    * Screen readers announce the host, not the visual arrangement, and a compact
-   * block hides the names entirely — so the label carries them regardless of how
+   * block hides the doctor entirely — so the label carries it regardless of how
    * much of the card is drawn.
    */
   protected readonly ariaLabel = computed(() => {

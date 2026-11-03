@@ -193,18 +193,32 @@ html {
 .mat-mdc-raised-button,
 .mat-mdc-outlined-button,
 .mat-mdc-button {
-  --mdc-filled-button-container-shape: var(--r-sm);
-  --mdc-outlined-button-container-shape: var(--r-sm);
-  --mdc-text-button-container-shape: var(--r-sm);
-  --mdc-protected-button-container-shape: var(--r-sm);
-  height: 40px;
-  padding-inline: 16px;
+  --mdc-filled-button-container-shape: var(--r-md);
+  --mdc-outlined-button-container-shape: var(--r-md);
+  --mdc-text-button-container-shape: var(--r-md);
+  --mdc-protected-button-container-shape: var(--r-md);
+  height: 42px;
+  padding-inline: 18px;
+}
+
+// Filled primary buttons share the Oradexa blue gradient. Disabled, danger and warn/accent buttons
+// keep their flat fills so state and meaning still read at a glance.
+.mat-mdc-unelevated-button:not(:disabled):not(.btn-danger):not(.mat-warn):not(.mat-accent),
+.mat-mdc-raised-button:not(:disabled):not(.btn-danger):not(.mat-warn):not(.mat-accent) {
+  background-color: var(--c-button);
+  background-image: var(--g-button);
+  color: #ffffff;
+  box-shadow: 0 8px 16px -8px var(--c-button);
+
+  &:hover {
+    background-image: var(--g-button-hover);
+  }
 }
 
 .mat-mdc-outlined-button:not(:disabled) {
   --mdc-outlined-button-outline-color: var(--c-border-strong);
   background: var(--c-surface);
-  color: var(--c-text);
+  color: var(--c-button-outline);
 }
 
 .mat-mdc-outlined-button:not(:disabled):hover {
@@ -216,13 +230,13 @@ html {
   transform: translateY(1px);
 }
 
-// Icon buttons sit on a 36px grid so toolbars stay tight.
+// Icon buttons sit on a 40px grid, matching the outlined button height.
 .mat-mdc-icon-button.mat-mdc-button-base {
-  --mdc-icon-button-state-layer-size: 36px;
-  width: 36px;
-  height: 36px;
-  padding: 6px;
-  border-radius: var(--r-sm);
+  --mdc-icon-button-state-layer-size: 40px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border-radius: var(--r-md);
 }
 
 // Destructive actions opt in explicitly rather than inheriting `warn`.
@@ -314,9 +328,9 @@ html {
 }
 
 .snackbar-success {
-  --mdc-snackbar-container-color: #064e45;
-  --mdc-snackbar-supporting-text-color: #ecfdf7;
-  --mat-snack-bar-button-color: #5eead4;
+  --mdc-snackbar-container-color: #0b4a2a;
+  --mdc-snackbar-supporting-text-color: #effdf4;
+  --mat-snack-bar-button-color: #86efac;
 }
 
 .snackbar-error {

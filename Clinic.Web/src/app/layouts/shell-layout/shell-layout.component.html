@@ -1,4 +1,4 @@
-<div class="shell" [class.shell-collapsed]="collapsed() && !isHandset()">
+<<div class="shell" [class.shell-collapsed]="collapsed() && !isHandset()">
   @if (drawerOpen() && isHandset()) {
     <div class="scrim" (click)="closeDrawer()" aria-hidden="true"></div>
   }
@@ -40,16 +40,46 @@
           }
 
           @for (item of group.items; track item.route) {
-            <a
-              class="nav-item"
-              [routerLink]="item.route"
-              routerLinkActive="nav-item-active"
-              [matTooltip]="collapsed() && !isHandset() ? (item.label | translate) : ''"
-              matTooltipPosition="after"
-            >
-              <ui-icon [name]="item.icon" size="md" />
-              <span class="nav-label">{{ item.label | translate }}</span>
-            </a>
+            @if (item.children; as children) {
+              <button
+                type="button"
+                class="nav-item nav-parent"
+                [class.nav-parent-active]="isBranchActive(item.route)"
+                [attr.aria-expanded]="isExpanded(item.route)"
+                [matTooltip]="collapsed() && !isHandset() ? (item.label | translate) : ''"
+                matTooltipPosition="after"
+                (click)="toggleGroup(item.route)"
+              >
+                <ui-icon [name]="item.icon" size="md" />
+                <span class="nav-label">{{ item.label | translate }}</span>
+                <ui-icon class="nav-caret" name="chevronDown" size="sm" />
+              </button>
+
+              @if (isExpanded(item.route) && !(collapsed() && !isHandset())) {
+                <div class="nav-sub">
+                  @for (child of children; track child.route) {
+                    <a
+                      class="nav-subitem"
+                      [routerLink]="child.route"
+                      routerLinkActive="nav-subitem-active"
+                    >
+                      <span class="nav-label">{{ child.label | translate }}</span>
+                    </a>
+                  }
+                </div>
+              }
+            } @else {
+              <a
+                class="nav-item"
+                [routerLink]="item.route"
+                routerLinkActive="nav-item-active"
+                [matTooltip]="collapsed() && !isHandset() ? (item.label | translate) : ''"
+                matTooltipPosition="after"
+              >
+                <ui-icon [name]="item.icon" size="md" />
+                <span class="nav-label">{{ item.label | translate }}</span>
+              </a>
+            }
           }
         </div>
       }
@@ -178,6 +208,15 @@
           </mat-menu>
         }
       </div>
+
+      @if (loading.isLoading() || navigating()) {
+        <div
+          class="progress-bar"
+          role="progressbar"
+          aria-busy="true"
+          [attr.aria-label]="loadingText()"
+        ></div>
+      }
     </header>
 
     <main class="content">

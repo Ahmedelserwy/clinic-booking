@@ -35,7 +35,11 @@ import {
   RecordDialogData,
   RecordFormDialogComponent,
 } from '../../records/record-form-dialog/record-form-dialog.component';
-import { PatientView, PatientsFacade } from '../patients.facade';
+import {
+  InvoiceDialogData,
+  InvoiceFormDialogComponent,
+} from '../../accounts/invoice-form-dialog/invoice-form-dialog.component';
+import { FollowUpInfo, PatientView, PatientsFacade, followUpInfo } from '../patients.facade';
 
 @Component({
   selector: 'app-patient-detail',
@@ -177,6 +181,13 @@ export class PatientDetailComponent {
       });
   });
 
+  /** The doctor's follow-up, when it is due today or missed and the patient has not come back since. */
+  protected readonly followUp = computed<FollowUpInfo | null>(() => {
+    const due = this.facade.followUpDateFor(this.patientId());
+    const last = this.lastVisit();
+    return followUpInfo(due, last ? parseDate(last.appointmentDate) : null);
+  });
+
   // ------------------------------------------------------------- billing --
 
   protected readonly invoices = computed(() =>
@@ -210,6 +221,121 @@ export class PatientDetailComponent {
     );
   }
 
+  /** Opens the invoice form with this patient already chosen and locked. */
+  protected addInvoice(): void {
+    const patient = this.patient();
+    if (!patient) {
+      return;
+    }
+
+    this.dialog.open<InvoiceFormDialogComponent, InvoiceDialogData, boolean>(
+      InvoiceFormDialogComponent,
+      {
+        width: '720px',
+        maxWidth: '95vw',
+        data: { patients: [patient], doctors: this.doctors(), patientId: patient.id },
+      }
+    );
+  }
+
+  // ------------------------------------------------------- prescription print --
+
+  protected hasPrescription(entry: TimelineEntry): boolean {
+    return Boolean(this.records.getById(entry.id)?.prescription?.trim());
+  }
+
+  protected printLabel(): string {
+    return this.label('common.print', 'طباعة الوصفة', 'Print prescription');
+  }
+
+  /**
+   * Prints one prescription as a clean A4 page: clinic header, patient and doctor,
+   * the prescription text and a signature line. It is built as its own document in
+   * a hidden frame, so the sidebar, tabs and buttons never end up on the paper.
+   */
+  protected printPrescription(entry: TimelineEntry): void {
+    const record = this.records.getById(entry.id);
+    const patient = this.patient();
+    const prescription = record?.prescription?.trim();
+    if (!record || !patient || !prescription) {
+      return;
+    }
+
+    const arabic = this.isArabic();
+    const t = (ar: string, en: string): string => (arabic ? ar : en);
+    const esc = (value: unknown): string =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const pad = (n: number): string => `${n}`.padStart(2, '0');
+    const formatDate = (value: string): string => {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime())
+        ? ''
+        : `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+    };
+
+    const doctor = record.doctorName ?? record.recordedBy ?? '';
+
+    // Only what a pharmacy needs next to the medicines: who it is for, when, and from whom.
+    const info: [string, string][] = [
+      [t('المريض', 'Patient'), patient.name],
+      [t('العمر', 'Age'), patient.age === null ? '' : `${patient.age}`],
+      [t('التاريخ', 'Date'), formatDate(record.occurredAt)],
+      [t('الطبيب', 'Doctor'), doctor],
+    ];
+
+    const html = `<!doctype html>
+<html lang="${arabic ? 'ar' : 'en'}" dir="${arabic ? 'rtl' : 'ltr'}">
+<head>
+<meta charset="utf-8">
+<title>${esc(t('وصفة طبية', 'Prescription'))} - ${esc(patient.name)}</title>
+<style>
+  @page { size: A4; margin: 16mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Tahoma, Arial, sans-serif; color: #0f2540; font-size: 14px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 12px; border-bottom: 3px solid #0f2540; }
+  .clinic { font-size: 24px; font-weight: 700; }
+  .doc-title { font-size: 16px; font-weight: 600; color: #475569; }
+  .info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 24px; margin: 18px 0; }
+  .info div { display: flex; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+  .info span { color: #64748b; min-width: 76px; }
+  .info b { font-weight: 600; }
+  .rx { display: flex; gap: 14px; margin-top: 12px; min-height: 300px; }
+  .rx-mark { font-size: 44px; line-height: 1; font-weight: 700; color: #0f2540; }
+  .rx-body { flex: 1; font-size: 17px; line-height: 2; white-space: pre-wrap; }
+  footer { margin-top: 36px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .sign { width: 220px; text-align: center; border-top: 1px solid #0f2540; padding-top: 6px; font-size: 13px; }
+  .note { color: #94a3b8; font-size: 11px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="clinic">${esc(this.clinicName())}</div>
+    <div class="doc-title">${esc(t('وصفة طبية', 'Prescription'))}</div>
+  </header>
+  <section class="info">
+    ${info
+      .filter(([, value]) => value)
+      .map(([label, value]) => `<div><span>${esc(label)}</span><b>${esc(value)}</b></div>`)
+      .join('')}
+  </section>
+  <div class="rx">
+    <div class="rx-mark">&#8478;</div>
+    <div class="rx-body">${esc(prescription)}</div>
+  </div>
+  <footer>
+    <div class="note">${esc(t('طُبعت بتاريخ', 'Printed on'))} ${esc(formatDate(new Date().toISOString()))}</div>
+    <div class="sign">${esc(doctor || t('توقيع الطبيب', 'Doctor signature'))}</div>
+  </footer>
+</body>
+</html>`;
+
+    this.printHtml(html);
+  }
+
   protected deleteRecord(entry: TimelineEntry): void {
     const record = this.records.getById(entry.id);
     if (!record) {
@@ -225,7 +351,9 @@ export class PatientDetailComponent {
     }).subscribe((confirmed) => {
       if (confirmed) {
         this.records.remove(record.id);
-        this.notifications.success(this.translate.instant('records.deleted'));
+        this.notifications.success(this.translate.instant('records.deleted'), {
+          detail: this.patient()?.name,
+        });
       }
     });
   }
@@ -255,10 +383,63 @@ export class PatientDetailComponent {
       }
 
       this.facade.remove(patient.id).subscribe(() => {
-        this.notifications.success(this.translate.instant('patients.deleted'));
+        this.notifications.success(this.translate.instant('patients.deleted'), {
+          detail: patient.name,
+        });
         void this.router.navigate(['/patients']);
       });
     });
+  }
+
+  private isArabic(): boolean {
+    return (document.documentElement.lang || 'ar').toLowerCase().startsWith('ar');
+  }
+
+  /** A translation if the key exists, otherwise a built-in fallback - never a raw key on screen. */
+  private label(key: string, arabic: string, english: string): string {
+    const text = this.translate.instant(key);
+    return text && text !== key ? text : this.isArabic() ? arabic : english;
+  }
+
+  private clinicName(): string {
+    // The settings shape may name this field differently; read it defensively.
+    const values = this.settings.settings() as unknown as Record<string, unknown>;
+    const name = values['clinicName'] ?? values['name'];
+    return typeof name === 'string' && name.trim()
+      ? name
+      : this.isArabic()
+        ? 'العيادة'
+        : 'Clinic';
+  }
+
+  /** Prints a standalone HTML document through a hidden frame and cleans up afterwards. */
+  private printHtml(html: string): void {
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    document.body.appendChild(frame);
+
+    const frameWindow = frame.contentWindow;
+    const frameDocument = frame.contentDocument;
+    if (!frameWindow || !frameDocument) {
+      frame.remove();
+      return;
+    }
+
+    frameDocument.open();
+    frameDocument.write(html);
+    frameDocument.close();
+
+    const cleanup = (): void => frame.remove();
+    frameWindow.onafterprint = cleanup;
+    // Some browsers never fire afterprint; don't leave the frame behind forever.
+    setTimeout(cleanup, 60_000);
+
+    // Give the new document a moment to lay out before the print dialog opens.
+    setTimeout(() => {
+      frameWindow.focus();
+      frameWindow.print();
+    }, 150);
   }
 
   private load(): void {

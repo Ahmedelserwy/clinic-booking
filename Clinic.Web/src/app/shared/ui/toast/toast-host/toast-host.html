@@ -1,0 +1,142 @@
+<div class="toast-region">
+  @for (toast of store.toasts(); track toast.id) {
+    <div
+      class="toast"
+      [class.is-leaving]="toast.leaving"
+      [attr.data-type]="toast.type"
+      [attr.data-kind]="toast.kind"
+      [attr.role]="toast.type === 'error' ? 'alert' : 'status'"
+      (mouseenter)="store.pause(toast.id)"
+      (mouseleave)="store.resume(toast.id)"
+      (focusin)="store.pause(toast.id)"
+      (focusout)="store.resume(toast.id)"
+    >
+      <div class="toast__row">
+        <div class="toast__icon" aria-hidden="true">
+          @switch (toast.type) {
+            @case ('success') {
+              @switch (toast.kind) {
+                @case ('ecg') {
+                  <span class="ring"></span>
+                  <svg class="ic ic--ecg" viewBox="0 0 40 24">
+                    <path class="draw draw--loop" pathLength="1" d="M2 12H12L16 4L21 20L25 12H38" />
+                  </svg>
+                  <span class="badge">
+                    <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4L18 8.5" /></svg>
+                  </span>
+                }
+                @case ('heart') {
+                  <span class="ring"></span>
+                  <span class="ring ring--late"></span>
+                  <svg class="ic ic--heart" viewBox="0 0 24 24">
+                    <path
+                      d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+                    />
+                  </svg>
+                  <span class="badge">
+                    <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4L18 8.5" /></svg>
+                  </span>
+                }
+                @case ('cross') {
+                  <span class="ring"></span>
+                  <span class="ring ring--late"></span>
+                  <span class="cross"></span>
+                  <span class="badge">
+                    <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4L18 8.5" /></svg>
+                  </span>
+                }
+                @case ('calendar') {
+                  <span class="ring"></span>
+                  <svg class="ic ic--calendar" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path class="flap" d="M16 2v4M8 2v4M3 10h18" />
+                    <path class="draw draw--late" pathLength="1" d="M9 16l2.2 2.2L15.5 14" />
+                  </svg>
+                }
+                @case ('receipt') {
+                  <span class="ring"></span>
+                  <span class="clip">
+                    <svg class="ic ic--receipt" viewBox="0 0 24 24">
+                      <path
+                        d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"
+                      />
+                      <path class="line line--1" d="M8 8h8" />
+                      <path class="line line--2" d="M8 12h8" />
+                      <path class="line line--3" d="M8 16h5" />
+                    </svg>
+                  </span>
+                  <span class="badge">
+                    <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4L18 8.5" /></svg>
+                  </span>
+                }
+                @default {
+                  <span class="ring"></span>
+                  <span class="ring ring--late"></span>
+                  <svg class="ic ic--check" viewBox="0 0 24 24">
+                    <circle class="draw draw--first" pathLength="1" cx="12" cy="12" r="9.5" />
+                    <path class="draw draw--second" pathLength="1" d="M7.5 12.5l3 3L16.5 9" />
+                  </svg>
+                }
+              }
+            }
+            @case ('error') {
+              <span class="ring"></span>
+              <span class="ring ring--late"></span>
+              <svg class="ic ic--error" viewBox="0 0 24 24">
+                <circle class="draw draw--first" pathLength="1" cx="12" cy="12" r="9.5" />
+                <path class="draw draw--second" pathLength="1" d="M9 9l6 6M15 9l-6 6" />
+              </svg>
+            }
+            @case ('warning') {
+              <span class="ring"></span>
+              <svg class="ic ic--warning" viewBox="0 0 24 24">
+                <path class="draw draw--first" pathLength="1" d="M12 3.2L22 20.5H2Z" />
+                <path class="bang" d="M12 9.5v5" />
+                <circle class="bang-dot" cx="12" cy="17.6" r="0.9" />
+              </svg>
+            }
+            @default {
+              <span class="ring"></span>
+              <span class="ring ring--late"></span>
+              <svg class="ic ic--info" viewBox="0 0 24 24">
+                <circle class="draw draw--first" pathLength="1" cx="12" cy="12" r="9.5" />
+                <path class="draw draw--second" pathLength="1" d="M12 11v5.5" />
+                <circle class="dot-drop" cx="12" cy="7.8" r="0.9" />
+              </svg>
+            }
+          }
+        </div>
+
+        <div class="toast__text">
+          <p class="toast__title" dir="auto">{{ toast.message }}</p>
+          @if (toast.detail) {
+            <p class="toast__detail" dir="auto">{{ toast.detail }}</p>
+          }
+        </div>
+
+        @if (toast.action; as action) {
+          <button type="button" class="toast__action" (click)="store.runAction(toast.id)">
+            {{ action.label }}
+          </button>
+        }
+
+        <button
+          type="button"
+          class="toast__close"
+          [attr.aria-label]="closeLabel()"
+          (click)="store.dismiss(toast.id)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+
+      @if (toast.duration > 0) {
+        <div
+          class="toast__bar"
+          [class.is-paused]="toast.paused"
+          [style.animation-duration.ms]="toast.duration"
+        ></div>
+      }
+    </div>
+  }
+</div>

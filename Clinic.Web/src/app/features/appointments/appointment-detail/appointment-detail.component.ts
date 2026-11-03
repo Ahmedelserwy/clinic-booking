@@ -65,6 +65,12 @@ export class AppointmentDetailComponent {
   protected readonly statusTone = computed(() => appointmentStatusTone(this.status()));
   protected readonly isPast = computed(() => this.status() === 'Past');
 
+  /** A cancelled or completed visit has nothing left to move or cancel. */
+  protected readonly isClosed = computed(() => {
+    const stored = this.appointment()?.status;
+    return stored === 'Cancelled' || stored === 'Completed';
+  });
+
   // The stored lifecycle status, shown beside the time-derived one. Two badges
   // rather than one because they answer different questions and can legitimately
   // disagree — a cancelled appointment is still "Today".
@@ -144,10 +150,16 @@ export class AppointmentDetailComponent {
         return;
       }
 
-      this.api.cancelAppointment(appointment.id).subscribe(() => {
-        this.notifications.success(this.translate.instant('appointments.deleted'));
-        void this.router.navigate(['/appointments']);
-      });
+      // Cancelling marks the booking Cancelled rather than deleting it, so the
+      // calendar keeps the record and its "Cancelled" count.
+      this.api
+        .cancelAppointment(appointment, this.settings.settings().slotMinutes)
+        .subscribe(() => {
+          this.notifications.success(this.translate.instant('appointments.statusChanged'), {
+            detail: `${appointment.patientName} · ${appointment.doctorName}`,
+          });
+          void this.router.navigate(['/appointments']);
+        });
     });
   }
 

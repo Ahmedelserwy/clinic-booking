@@ -82,6 +82,77 @@
       </div>
     </div>
 
+    <!-- Services ---------------------------------------------------------- -->
+    <section class="services" aria-labelledby="services-heading">
+      <header class="services-head">
+        <div>
+          <h3 id="services-heading">{{ 'doctors.services' | translate }}</h3>
+          <p class="hint">{{ 'doctors.servicesHint' | translate }}</p>
+        </div>
+        <button mat-stroked-button type="button" (click)="addService()">
+          <ui-icon name="add" size="sm" />
+          {{ 'doctors.addService' | translate }}
+        </button>
+      </header>
+
+      @if (form.controls.services.length) {
+        <ul class="service-list">
+          @for (service of form.controls.services.controls; track service; let i = $index) {
+            <li class="service" [formGroup]="service">
+              <div class="field">
+                <mat-form-field>
+                  <mat-label>{{ 'doctors.serviceName' | translate }}</mat-label>
+                  <input matInput type="text" formControlName="name" maxlength="100" />
+                </mat-form-field>
+                <ui-field-error [control]="service.controls.name" [submitted]="submitted()" />
+              </div>
+
+              <div class="field">
+                <mat-form-field>
+                  <mat-label>{{ 'doctors.servicePrice' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="price" min="0" step="1" />
+                </mat-form-field>
+                <ui-field-error [control]="service.controls.price" [submitted]="submitted()" />
+              </div>
+
+              <div class="field">
+                <mat-form-field>
+                  <mat-label>{{ 'doctors.serviceDuration' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="durationMinutes" min="5" step="5" />
+                  <mat-hint>{{ 'common.optional' | translate }}</mat-hint>
+                </mat-form-field>
+                <ui-field-error [control]="service.controls.durationMinutes" [submitted]="submitted()" />
+              </div>
+
+              <button
+                mat-icon-button
+                type="button"
+                class="danger service-remove"
+                [attr.aria-label]="'doctors.removeService' | translate"
+                [matTooltip]="'doctors.removeService' | translate"
+                (click)="removeService(i)"
+              >
+                <ui-icon name="delete" size="md" />
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="off-label">{{ 'doctors.noServices' | translate }}</p>
+      }
+    </section>
+
+    <!-- Re-examination ---------------------------------------------------- -->
+    <section class="reexam" aria-labelledby="reexam-heading">
+      <div class="reexam-text">
+        <strong id="reexam-heading">{{ 'doctors.reexamTitle' | translate }}</strong>
+        <span class="hint">{{ reexamSummary().key | translate: reexamSummary().params }}</span>
+      </div>
+      <button mat-stroked-button type="button" (click)="openReexamination()">
+        {{ 'doctors.reexamEdit' | translate }}
+      </button>
+    </section>
+
     @if (!isEdit) {
       <!-- Working schedule ------------------------------------------------ -->
       <!-- Only on create. Editing the rota afterwards means deleting shifts

@@ -1,4 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { MatPaginatorIntl } from '@angular/material/paginator';
+import { AppPaginatorIntl } from './core/i18n/App paginator intl '; // adjust the path
+
 import {
   ApplicationConfig,
   inject,
@@ -37,7 +40,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAnimationsAsync(),
-
+     
     // PreloadAllModules downloads every lazy feature chunk in the background
     // right after the first page loads, so moving between pages doesn't wait
     // on a network request for the feature's JavaScript.
@@ -56,7 +59,7 @@ export const appConfig: ApplicationConfig = {
       fallbackLang: DEFAULT_LANGUAGE,
     }),
     provideTranslateLoader(StaticTranslateLoader),
-
+     { provide: MatPaginatorIntl, useClass: AppPaginatorIntl },
     // Datepicker/timepicker run on the native adapter; LocaleService pushes the
     // active locale into it, so month names and the first day of the week
     // follow the language without a second date library in the bundle.

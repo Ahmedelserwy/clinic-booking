@@ -43,6 +43,9 @@
                 @if (card.doctor.isActive === false) {
                   <span class="badge badge-neutral">{{ 'doctors.statusInactive' | translate }}</span>
                 }
+                @if (card.doctor.reexamination?.enabled) {
+                  <span class="badge badge-neutral">{{ 'doctors.reexamBadge' | translate }}</span>
+                }
               </div>
             </div>
 
@@ -92,6 +95,12 @@
               <div>
                 <dt>{{ 'doctors.consultationFee' | translate }}</dt>
                 <dd>{{ card.doctor.consultationFee }}</dd>
+              </div>
+            }
+            @if (card.serviceCount) {
+              <div>
+                <dt>{{ 'doctors.services' | translate }}</dt>
+                <dd>{{ 'doctors.serviceCount' | translate: { count: card.serviceCount } }}</dd>
               </div>
             }
             @if (card.doctor.phone) {

@@ -103,7 +103,7 @@ export type AppointmentQuickViewResult = boolean;
     </mat-dialog-content>
 
     <mat-dialog-actions class="quick-actions">
-      @if (data.canCancel) {
+      @if (data.canCancel && appointment.status !== 'Cancelled') {
         <button mat-button type="button" class="btn-danger-text" (click)="cancel()">
           <ui-icon name="calendarX" size="sm" />
           {{ 'appointments.delete' | translate }}
@@ -296,10 +296,14 @@ export class AppointmentQuickViewComponent {
         return;
       }
 
-      this.api.cancelAppointment(this.appointment.id).subscribe(() => {
-        this.notifications.success(this.translate.instant('appointments.deleted'));
-        this.dialogRef.close(true);
-      });
+      // Cancelling sets the status instead of deleting the row, so the booking
+      // stays on the calendar as Cancelled and in its legend count.
+      this.api
+        .cancelAppointment(this.appointment, this.data.fallbackDurationMinutes)
+        .subscribe(() => {
+          this.notifications.success(this.translate.instant('appointments.statusChanged'));
+          this.dialogRef.close(true);
+        });
     });
   }
 

@@ -1,6 +1,7 @@
 using Clinic.Domain.Entites;
 using Clinic.Domain.Entites.Identity;
 using Clinic.Domain.Interfaces;
+ 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -428,6 +429,12 @@ namespace Clinic.Infrastructure.Data.Context
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
+
+        // Clinic running costs (rent, utilities, salaries...). Tenant-owned: ITenantEntity gives it
+        // the query filter, the TenantId foreign key and the insert-time stamping automatically.
+        public DbSet<Expense> Expenses { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<DailyClosing> DailyClosings { get; set; }
 
         // There is deliberately no DbSet<User>. The legacy Clinic.Domain.Entites.User entity
         // defined a plaintext 'Password' column and was entirely superseded by ASP.NET Identity

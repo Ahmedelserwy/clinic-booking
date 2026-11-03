@@ -1,46 +1,53 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { AccountsStore } from '../../../core/data/accounts.store';
 import { ClinicSettingsStore } from '../../../core/data/clinic-settings.store';
-import { Invoice, round2 } from '../../../core/data/finance.model';
+import { Invoice, PaymentMethod, round2 } from '../../../core/data/finance.model';
 import { Doctor } from '../../../core/models/doctor.model';
 import { Patient } from '../../../core/models/patient.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { toDateOnly } from '../../../core/utils/date.util';
 import { FieldErrorComponent } from '../../../shared/ui/field-error/field-error.component';
-import { IconComponent } from '../../../shared/ui/icon/icon.component';
 
 export interface InvoiceDialogData {
   patients: Patient[];
   doctors: Doctor[];
   invoice?: Invoice;
+  patientId?: number;
 }
 
+type VisitType = 'examination' | 'followUp';
+
+/**
+ * Clinic invoice = one doctor + one visit type + one fee.
+ * The fee comes from the doctor's consultation fee (set when the doctor is
+ * added) and can be overridden for this invoice. Follow-up visits default to 0.
+ *
+ * Stored shape is unchanged: one line (qty 1, unitPrice = fee), no tax, no
+ * discount, dueAt = issuedAt.
+ */
 @Component({
   selector: 'app-invoice-form-dialog',
   imports: [
     ReactiveFormsModule,
-    MatAutocompleteModule,
     MatButtonModule,
     MatDatepickerModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatTooltipModule,
     TranslatePipe,
     FieldErrorComponent,
-    IconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './invoice-form-dialog.component.html',
@@ -50,8 +57,10 @@ export class InvoiceFormDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly notifications = inject(NotificationService);
   private readonly settings = inject(ClinicSettingsStore);
+  private readonly auth = inject(AuthService);
   private readonly store = inject(AccountsStore);
   private readonly translate = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly dialogRef = inject<MatDialogRef<InvoiceFormDialogComponent, boolean>>(MatDialogRef);
   readonly data = inject<InvoiceDialogData>(MAT_DIALOG_DATA);
@@ -61,75 +70,36 @@ export class InvoiceFormDialogComponent {
   protected readonly currency = this.settings.settings().currency;
 
   protected readonly form = this.formBuilder.nonNullable.group({
-    patientId: this.formBuilder.control<number | null>(this.data.invoice?.patientId ?? null, [
+    patientId: this.formBuilder.control<number | null>(
+      this.data.invoice?.patientId ?? this.data.patientId ?? null,
+      [Validators.required]
+    ),
+    doctorId: this.formBuilder.control<number | null>(this.data.invoice?.doctorId ?? null, [
       Validators.required,
     ]),
-    doctorId: this.formBuilder.control<number | null>(this.data.invoice?.doctorId ?? null),
+    visitType: this.formBuilder.nonNullable.control<VisitType>(this.initialVisitType()),
     issuedAt: this.formBuilder.control<Date | null>(
       this.data.invoice ? new Date(this.data.invoice.issuedAt) : new Date(),
       [Validators.required]
     ),
-    dueAt: this.formBuilder.control<Date | null>(
-      this.data.invoice ? new Date(this.data.invoice.dueAt) : new Date(),
-      [Validators.required]
-    ),
-    discount: [this.data.invoice?.discount ?? 0, [Validators.min(0)]],
-    taxRate: [this.data.invoice?.taxRate ?? this.settings.settings().taxRate, [
-      Validators.min(0),
-      Validators.max(100),
-    ]],
+    amount: [this.initialAmount(), [Validators.required, Validators.min(0)]],
+    paymentMethod: this.formBuilder.nonNullable.control<PaymentMethod>('cash'),
     notes: [this.data.invoice?.notes ?? '', [Validators.maxLength(300)]],
-    items: this.formBuilder.array(
-      (this.data.invoice?.items ?? [{ description: '', quantity: 1, unitPrice: 0 }]).map((item) =>
-        this.createItem(item.description, item.quantity, item.unitPrice)
-      )
-    ),
   });
 
-  /** Mirrors the item array into a signal so totals recompute as you type. */
-  protected readonly itemsValue = signal(this.form.controls.items.getRawValue());
-
-  protected readonly subtotal = computed(() =>
-    round2(
-      this.itemsValue().reduce(
-        (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
-        0
-      )
-    )
-  );
-
-  protected readonly discountValue = signal(this.form.controls.discount.value);
-  protected readonly taxRateValue = signal(this.form.controls.taxRate.value);
-
-  protected readonly taxAmount = computed(() =>
-    round2(Math.max(0, this.subtotal() - (this.discountValue() || 0)) * ((this.taxRateValue() || 0) / 100))
-  );
-
-  protected readonly total = computed(() =>
-    round2(Math.max(0, this.subtotal() - (this.discountValue() || 0)) + this.taxAmount())
-  );
-
   constructor() {
-    this.form.controls.items.valueChanges.subscribe(() =>
-      this.itemsValue.set(this.form.controls.items.getRawValue())
-    );
-    this.form.controls.discount.valueChanges.subscribe((value) => this.discountValue.set(value));
-    this.form.controls.taxRate.valueChanges.subscribe((value) => this.taxRateValue.set(value));
-  }
-
-  protected get items(): FormArray {
-    return this.form.controls.items;
-  }
-
-  protected addItem(): void {
-    this.items.push(this.createItem('', 1, 0));
-  }
-
-  protected removeItem(index: number): void {
-    // An invoice with no lines has no total; keep at least one row.
-    if (this.items.length > 1) {
-      this.items.removeAt(index);
-    }
+    // Re-price whenever the doctor or visit type changes. Editing the amount by
+    // hand afterwards is allowed; it stays until the next doctor/type change.
+    const reprice = () => {
+      const { doctorId, visitType } = this.form.getRawValue();
+      this.form.controls.amount.setValue(this.feeFor(doctorId, visitType));
+    };
+    this.form.controls.doctorId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(reprice);
+    this.form.controls.visitType.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(reprice);
   }
 
   protected submit(): void {
@@ -143,49 +113,109 @@ export class InvoiceFormDialogComponent {
     const raw = this.form.getRawValue();
     const patient = this.data.patients.find((entry) => entry.id === raw.patientId);
     const doctor = this.data.doctors.find((entry) => entry.id === raw.doctorId);
-
-    const items = raw.items
-      .filter((item) => item.description.trim() && Number(item.quantity) > 0)
-      .map((item) => ({
-        description: item.description.trim(),
-        quantity: Number(item.quantity),
-        unitPrice: Number(item.unitPrice),
-      }));
-
-    if (!items.length) {
-      this.notifications.error(this.translate.instant('validation.required'));
-      return;
-    }
+    const issuedAt = toDateOnly(raw.issuedAt!);
 
     const payload = {
       patientId: raw.patientId!,
       patientName: patient?.name ?? '',
       doctorId: doctor?.id,
       doctorName: doctor?.name,
-      issuedAt: toDateOnly(raw.issuedAt!),
-      dueAt: toDateOnly(raw.dueAt!),
-      items,
-      discount: Number(raw.discount) || 0,
-      taxRate: Number(raw.taxRate) || 0,
+      issuedAt,
+      dueAt: issuedAt,
+      items: [
+        {
+          description: this.translate.instant(`accounts.${raw.visitType}`),
+          quantity: 1,
+          unitPrice: round2(Number(raw.amount) || 0),
+        },
+      ],
+      discount: 0,
+      taxRate: 0,
       notes: raw.notes.trim() || undefined,
-      status: 'unpaid' as const,
+      // The store derives paid/partial/unpaid from recorded payments; only
+      // draft/void are ever authored. New invoices are paid via recordPayment below.
+      status: this.data.invoice?.status ?? ('unpaid' as const),
     };
 
     if (this.data.invoice) {
-      this.store.updateInvoice(this.data.invoice.id, payload);
+      const invoice = this.data.invoice;
+      this.store.updateInvoice(invoice.id, payload);
+
+      // The payment follows the invoice: a changed fee, doctor or visit type changes what was
+      // collected, and so what the reports show. With several payments on file the history is
+      // left alone, because there is no single amount to change.
+      const payments = this.store.payments().filter((payment) => payment.invoiceId === invoice.id);
+      if (payments.length <= 1) {
+        const previous = payments[0];
+        if (previous) {
+          this.store.removePayment(previous.id);
+        }
+        const fee = payload.items[0].unitPrice;
+        if (fee > 0) {
+          this.store.recordPayment({
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.number,
+            patientName: payload.patientName,
+            amount: fee,
+            // An invoice edited from the list keeps the method it was paid with.
+            method: previous?.method ?? raw.paymentMethod,
+            reference: raw.visitType,
+            paidAt: previous?.paidAt ?? `${issuedAt}T${new Date().toTimeString().slice(0, 8)}`,
+            recordedBy: previous?.recordedBy || this.currentUserName(),
+          });
+        }
+      }
     } else {
-      this.store.createInvoice(payload);
+      const created = this.store.createInvoice(payload);
+      const fee = payload.items[0].unitPrice;
+
+      // No credit in a clinic: the patient pays at the counter, so the full
+      // amount is recorded as received. A free visit (0) has nothing to collect.
+      if (fee > 0) {
+        this.store.recordPayment({
+          invoiceId: created.id,
+          invoiceNumber: created.number,
+          patientName: payload.patientName,
+          amount: fee,
+          method: raw.paymentMethod,
+          // The visit type travels with the payment so the reports can split by it.
+          reference: raw.visitType,
+          // Same local day as the invoice, so daily income and closing line up.
+          paidAt: `${issuedAt}T${new Date().toTimeString().slice(0, 8)}`,
+          recordedBy: this.currentUserName(),
+        });
+      }
     }
 
     this.notifications.success(this.translate.instant('settings.saved'));
     this.dialogRef.close(true);
   }
 
-  private createItem(description: string, quantity: number, unitPrice: number) {
-    return this.formBuilder.nonNullable.group({
-      description: [description, [Validators.required, Validators.maxLength(120)]],
-      quantity: [quantity, [Validators.required, Validators.min(1)]],
-      unitPrice: [unitPrice, [Validators.required, Validators.min(0)]],
-    });
+  /** Who is at the desk: shown as "received by" in the reports. */
+  private currentUserName(): string {
+    return this.auth.currentUser?.displayName ?? '';
+  }
+
+  private feeFor(doctorId: number | null, visitType: VisitType): number {
+    if (visitType === 'followUp') {
+      return 0;
+    }
+    const doctor = this.data.doctors.find((entry) => entry.id === doctorId);
+    return doctor?.consultationFee ?? 0;
+  }
+
+  private initialVisitType(): VisitType {
+    const description = this.data.invoice?.items[0]?.description;
+    return description && description === this.translate.instant('accounts.followUp')
+      ? 'followUp'
+      : 'examination';
+  }
+
+  private initialAmount(): number {
+    const invoice = this.data.invoice;
+    if (!invoice) {
+      return 0;
+    }
+    return round2(invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
   }
 }

@@ -33,3 +33,79 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+// Cancel / Save at the very end of the "new patient" form, centred under the two columns so it
+// sits close to the fields instead of in a far corner. Bigger targets: this is the page's main action.
+// (To put it on the start edge instead, change `center` to `flex-start`.)
+.form-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding-block-end: var(--sp-4);
+}
+
+.form-footer button {
+  min-width: 120px;
+  height: 44px;
+}:host {
+  display: block;
+}
+
+.head-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+// Identity/contact on the left, clinical profile on the right: the left column
+// is what reception fills in, the right is what a clinician adds.
+.form-columns {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .form-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// Cancel / Save at the very end of the "new patient" form, centred under the two columns so it
+// sits close to the fields instead of in a far corner. Bigger targets: this is the page's main action.
+// (To put it on the start edge instead, change `center` to `flex-start`.)
+.form-footer {
+  display: flex;
+  // "start" is the right edge in Arabic and the left edge in English, where the eye begins.
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding-block-end: var(--sp-4);
+}
+
+.form-footer button {
+  min-width: 160px;
+  height: 52px;
+  font-size: var(--fs-md, 1rem);
+}
+
+@media (max-width: 640px) {
+  .form-footer button {
+    flex: 1 1 0;
+  }
+}

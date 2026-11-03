@@ -16,11 +16,11 @@
 :root {
   // ---------------------------------------------------------------- palette --
   // Brand ramp (kept as literals so `color-mix()` tints stay predictable).
-  --brand-700: #0f766e;
-  --brand-600: #128077;
-  --brand-500: #14b8a6;
-  --brand-400: #2dd4bf;
-  --accent-600: #2563eb;
+  --brand-700: #245eb4;
+  --brand-600: #2b68c5;
+  --brand-500: #5b95e0;
+  --brand-400: #8db5ec;
+  --accent-600: #1d4ed8;
   --accent-500: #3b82f6;
   --success-500: #22c55e;
   --success-600: #16a34a;
@@ -30,33 +30,54 @@
   --danger-600: #dc2626;
 
   // --------------------------------------------------------------- surfaces --
-  --c-canvas: #f7f8fa; // page background
+  --c-canvas: #f3f6fb; // page background
   --c-surface: #ffffff; // cards, panels, table body
-  --c-surface-2: #f2f4f7; // inset areas, table header, disabled fields
-  --c-surface-3: #e9edf2; // hover on a surface-2 element
-  --c-surface-inverse: #101828;
+  --c-surface-2: #f6f9fd; // inset areas, table header, disabled fields
+  --c-surface-3: #e2eaf5; // hover on a surface-2 element
+  --c-surface-inverse: #0f2540;
   --c-overlay: #ffffff; // dialogs / menus / popovers
-  --c-scrim: rgb(16 24 40 / 44%);
+  --c-scrim: rgb(15 37 64 / 44%);
 
   // ------------------------------------------------------------------- text --
-  --c-text: #101828; // headings, primary content
-  --c-text-muted: #475467; // labels, secondary content
-  --c-text-subtle: #98a2b3; // placeholders, meta, disabled
+  --c-text: #0f2540; // headings, primary content
+  --c-text-muted: #4a5b73; // labels, secondary content
+  --c-text-subtle: #6b7a90; // placeholders, meta, disabled
   --c-text-inverse: #ffffff;
 
   // ---------------------------------------------------------------- borders --
-  --c-border: #e4e7ec; // default hairline
-  --c-border-strong: #d0d5dd; // inputs, dividers that must read
+  --c-border: #e3e9f3; // default hairline
+  --c-border-soft: #edf1f7; // row dividers inside a card
+  --c-border-strong: #c9d4e6; // outlined buttons, dividers that must read
   --c-ring: color-mix(in srgb, var(--brand-700) 40%, transparent);
 
   // ------------------------------------------------------- semantic (solid) --
-  --c-primary: var(--brand-700);
-  --c-primary-hover: #0c625b;
-  --c-primary-active: #0a524c;
+  --c-primary: #12284b; // navy, shared with buttons and the sidebar
+  --c-primary-hover: #183461;
+  --c-primary-active: #0e2342;
   --c-primary-fg: #ffffff;
 
   --c-secondary: var(--brand-500);
-  --c-secondary-fg: #04302b;
+  --c-secondary-fg: #0a1f3a;
+
+  // Oradexa signature gradients: filled buttons / hero tiles, and the deep navy panels.
+  --g-primary: linear-gradient(135deg, #2e6ece 0%, #1c509d 100%);
+  --g-primary-hover: linear-gradient(135deg, #3a78d8 0%, #2159ad 100%);
+  --g-navy: linear-gradient(160deg, #1b3962 0%, #0f2541 100%);
+  --g-sidebar: linear-gradient(180deg, #14305a 0%, #0e2342 100%);
+
+  // Sidebar (Oradexa navy)
+  --c-sidebar: #12284b;
+  --c-sidebar-border: rgb(255 255 255 / 8%);
+  --c-sidebar-fg: #c9d6ea;
+  --c-sidebar-fg-muted: #7f93b3;
+  --c-sidebar-hover: rgb(255 255 255 / 8%);
+  --c-sidebar-active: rgb(255 255 255 / 14%);
+
+  // Buttons share the sidebar navy
+  --g-button: linear-gradient(135deg, #1b3a68 0%, #12284b 100%);
+  --g-button-hover: linear-gradient(135deg, #25487d 0%, #183461 100%);
+  --c-button: #12284b;
+  --c-button-outline: #12284b;
 
   --c-accent: var(--accent-600);
   --c-accent-fg: #ffffff;
@@ -72,10 +93,10 @@
 
   // -------------------------------------------------------- semantic (soft) --
   // Tinted backgrounds for chips, badges, alert banners and icon tiles.
-  --c-primary-soft: color-mix(in srgb, var(--brand-700) 10%, #ffffff);
-  --c-primary-soft-fg: #0b5d56;
+  --c-primary-soft: color-mix(in srgb, var(--brand-700) 14%, #ffffff);
+  --c-primary-soft-fg: #245eb4;
   --c-secondary-soft: color-mix(in srgb, var(--brand-500) 14%, #ffffff);
-  --c-secondary-soft-fg: #0f766e;
+  --c-secondary-soft-fg: #1e56a6;
   --c-accent-soft: color-mix(in srgb, var(--accent-600) 10%, #ffffff);
   --c-accent-soft-fg: #1d4ed8;
   --c-success-soft: color-mix(in srgb, var(--success-500) 14%, #ffffff);
@@ -84,15 +105,15 @@
   --c-warning-soft-fg: #b45309;
   --c-danger-soft: color-mix(in srgb, var(--danger-500) 12%, #ffffff);
   --c-danger-soft-fg: #b42318;
-  --c-neutral-soft: #f2f4f7;
-  --c-neutral-soft-fg: #475467;
+  --c-neutral-soft: #eef3fa;
+  --c-neutral-soft-fg: #4a5b73;
 
   // ------------------------------------------------------------------ radii --
   --r-xs: 6px;
   --r-sm: 8px;
   --r-md: 12px;
-  --r-lg: 14px; // the house radius — cards, dialogs, inputs
-  --r-xl: 20px;
+  --r-lg: 14px; // inputs, small panels
+  --r-xl: 18px; // the house radius — cards, dialogs
   --r-2xl: 28px;
   --r-full: 999px;
 
@@ -111,9 +132,9 @@
   // ---------------------------------------------------------------- shadows --
   // Three only. Soft, low-spread, tinted with the neutral hue rather than pure
   // black so they read as depth instead of dirt.
-  --sh-card: 0 1px 2px rgb(16 24 40 / 4%), 0 1px 3px rgb(16 24 40 / 6%);
-  --sh-raised: 0 2px 4px rgb(16 24 40 / 5%), 0 8px 20px -6px rgb(16 24 40 / 10%);
-  --sh-overlay: 0 8px 12px -4px rgb(16 24 40 / 8%), 0 24px 48px -12px rgb(16 24 40 / 18%);
+  --sh-card: 0 1px 2px rgb(15 37 64 / 4%), 0 8px 20px -12px rgb(15 37 64 / 12%);
+  --sh-raised: 0 10px 20px -10px rgb(15 37 64 / 45%);
+  --sh-overlay: 0 8px 12px -4px rgb(15 37 64 / 8%), 0 24px 48px -12px rgb(15 37 64 / 18%);
   --sh-focus: 0 0 0 3px var(--c-ring);
 
   // ------------------------------------------------------------- typography --
@@ -181,17 +202,32 @@ html.dark {
   --c-text-inverse: #0b0f14;
 
   --c-border: #202b36;
+  --c-border-soft: #1a232d;
   --c-border-strong: #2c3945;
   --c-ring: color-mix(in srgb, var(--brand-400) 45%, transparent);
 
   // Solid fills lighten so they keep contrast against the dark canvas.
-  --c-primary: #17a394;
-  --c-primary-hover: #1cb5a4;
-  --c-primary-active: #148d81;
-  --c-primary-fg: #04211e;
+  --c-primary: #4d8ce6;
+  --c-primary-hover: #6ba0ee;
+  --c-primary-active: #3f7bd1;
+  --c-primary-fg: #06142b;
 
   --c-secondary: var(--brand-400);
-  --c-secondary-fg: #04302b;
+  --c-secondary-fg: #0a1f3a;
+
+  --g-primary: linear-gradient(135deg, #5b95e0 0%, #3a78d2 100%);
+  --g-primary-hover: linear-gradient(135deg, #73a5ea 0%, #4a88e0 100%);
+  --g-navy: linear-gradient(160deg, #142b4a 0%, #0b1b30 100%);
+  --g-sidebar: linear-gradient(180deg, #102845 0%, #0b1b30 100%);
+
+  --c-sidebar: #0b1b30;
+  --c-sidebar-border: rgb(255 255 255 / 6%);
+
+  // Navy buttons would vanish on a dark canvas, so keep the lighter blue here.
+  --g-button: var(--g-primary);
+  --g-button-hover: var(--g-primary-hover);
+  --c-button: var(--c-primary);
+  --c-button-outline: var(--c-text);
 
   --c-accent: var(--accent-500);
   --c-accent-fg: #06152e;
@@ -207,9 +243,9 @@ html.dark {
 
   // Soft tints mix into the surface instead of white.
   --c-primary-soft: color-mix(in srgb, var(--brand-400) 16%, #111820);
-  --c-primary-soft-fg: #5eead4;
+  --c-primary-soft-fg: #a9c8f5;
   --c-secondary-soft: color-mix(in srgb, var(--brand-400) 18%, #111820);
-  --c-secondary-soft-fg: #7ff0e0;
+  --c-secondary-soft-fg: #b4cdf4;
   --c-accent-soft: color-mix(in srgb, var(--accent-500) 18%, #111820);
   --c-accent-soft-fg: #93b4fd;
   --c-success-soft: color-mix(in srgb, var(--success-500) 18%, #111820);

@@ -23,8 +23,9 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--c-surface);
-  border-inline-end: 1px solid var(--c-border);
+  background: var(--c-sidebar);
+  color: var(--c-sidebar-fg);
+  border-inline-end: 1px solid var(--c-sidebar-border);
   overflow: hidden;
   z-index: var(--z-drawer);
 }
@@ -35,7 +36,7 @@
   gap: var(--sp-2);
   height: var(--lay-topbar);
   padding-inline: 14px;
-  border-block-end: 1px solid var(--c-border);
+  border-block-end: 1px solid var(--c-sidebar-border);
   flex: 0 0 auto;
 }
 
@@ -59,8 +60,8 @@
   width: 34px;
   height: 34px;
   border-radius: var(--r-md);
-  background: var(--c-primary);
-  color: var(--c-primary-fg);
+  background: var(--g-primary);
+  color: #ffffff;
 }
 
 .brand-text {
@@ -74,11 +75,16 @@
   font-size: var(--fs-base);
   font-weight: var(--fw-semibold);
   letter-spacing: -0.01em;
+  color: #ffffff;
 }
 
 .brand-text small {
   font-size: var(--fs-2xs);
-  color: var(--c-text-subtle);
+  color: var(--c-sidebar-fg-muted);
+}
+
+.drawer-close {
+  color: var(--c-sidebar-fg);
 }
 
 // -----------------------------------------------------------------------------
@@ -105,7 +111,7 @@
   font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--c-text-subtle);
+  color: var(--c-sidebar-fg-muted);
   white-space: nowrap;
 }
 
@@ -121,7 +127,7 @@
   font: inherit;
   font-size: var(--fs-base);
   font-weight: var(--fw-medium);
-  color: var(--c-text-muted);
+  color: var(--c-sidebar-fg);
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -130,22 +136,18 @@
 }
 
 .nav-item:hover {
-  background: var(--c-surface-2);
-  color: var(--c-text);
+  background: var(--c-sidebar-hover);
+  color: #ffffff;
   text-decoration: none;
 }
 
 // The active item is marked by fill + weight, not by an accent bar: at a
 // glance the eye finds the filled row faster than a 3px stripe.
-.nav-item-active {
-  background: var(--c-primary-soft);
-  color: var(--c-primary-soft-fg);
-  font-weight: var(--fw-semibold);
-}
-
+.nav-item-active,
 .nav-item-active:hover {
-  background: var(--c-primary-soft);
-  color: var(--c-primary-soft-fg);
+  background: var(--c-sidebar-active);
+  color: #ffffff;
+  font-weight: var(--fw-semibold);
 }
 
 .nav-label {
@@ -157,11 +159,70 @@
 .sidebar-foot {
   flex: 0 0 auto;
   padding: 10px;
-  border-block-start: 1px solid var(--c-border);
+  border-block-start: 1px solid var(--c-sidebar-border);
 }
 
 .nav-button {
   width: 100%;
+}
+
+// Expandable item (Reports)
+.nav-parent {
+  width: 100%;
+}
+
+.nav-caret {
+  margin-inline-start: auto;
+  flex: 0 0 auto;
+  transition: transform var(--dur-micro) var(--ease-standard);
+}
+
+.nav-parent[aria-expanded='true'] .nav-caret {
+  transform: rotate(180deg);
+}
+
+// The heading itself is not filled; the sub-item is. Weight alone shows the branch is current.
+.nav-parent-active {
+  color: #ffffff;
+  font-weight: var(--fw-semibold);
+}
+
+.nav-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-block: 2px 4px;
+  margin-inline-start: 22px;
+  padding-inline-start: 10px;
+  border-inline-start: 1px solid var(--c-sidebar-border);
+}
+
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding-inline: 10px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-sidebar-fg);
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-micro) var(--ease-standard),
+    color var(--dur-micro) var(--ease-standard);
+}
+
+.nav-subitem:hover {
+  background: var(--c-sidebar-hover);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.nav-subitem-active,
+.nav-subitem-active:hover {
+  background: var(--c-sidebar-active);
+  color: #ffffff;
+  font-weight: var(--fw-semibold);
 }
 
 // -----------------------------------------------------------------------------
@@ -169,7 +230,8 @@
 // -----------------------------------------------------------------------------
 .shell-collapsed {
   .brand-text,
-  .nav-label {
+  .nav-label,
+  .nav-caret {
     display: none;
   }
 
@@ -190,7 +252,7 @@
     padding: 0;
     margin: var(--sp-2) 8px;
     overflow: hidden;
-    background: var(--c-border);
+    background: var(--c-sidebar-border);
     color: transparent;
   }
 }
@@ -392,8 +454,55 @@
 }
 
 .content {
+  position: relative;
   flex: 1 1 auto;
   padding: var(--lay-gutter);
+}
+
+// Loading: a thin line along the bottom edge of the top bar, for page changes and
+// background requests (saves, refreshes). It waits 300ms, so quick loads never show it.
+.progress-bar {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  animation: loader-in 0.2s ease 0.3s forwards;
+}
+
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -40%;
+  width: 40%;
+  border-radius: var(--r-full);
+  background: var(--c-primary);
+  animation: progress-run 1.4s ease-in-out infinite;
+}
+
+// Logical offsets: the line sweeps from the start edge, so it runs right-to-left in Arabic.
+@keyframes progress-run {
+  to {
+    inset-inline-start: 100%;
+  }
+}
+
+@keyframes loader-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar::before {
+    inset-inline-start: 0;
+    width: 100%;
+    opacity: 0.55;
+    animation: none;
+  }
 }
 
 .content-inner {

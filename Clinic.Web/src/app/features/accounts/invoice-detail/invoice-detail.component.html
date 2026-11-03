@@ -1,0 +1,128 @@
+@if (invoice(); as inv) {
+  <div class="page">
+    <ui-page-header
+      class="no-print"
+      [title]="inv.number"
+      [subtitle]="inv.patientName"
+      backRoute="/patients/{{ inv.patientId }}"
+      [breadcrumbs]="[
+        { label: 'patients.title', route: '/patients' },
+        { label: inv.patientName, route: '/patients/' + inv.patientId },
+        { label: inv.number },
+      ]"
+    >
+      <div actions class="head-actions">
+        <button mat-flat-button type="button" (click)="print()">
+          <ui-icon name="print" size="sm" />
+          {{ 'common.print' | translate }}
+        </button>
+      </div>
+    </ui-page-header>
+
+    <article class="invoice-sheet surface">
+      <header class="sheet-head">
+        <div>
+          @if (clinicName()) {
+            <p class="clinic">{{ clinicName() }}</p>
+          }
+          <h2>{{ 'accounts.invoice' | translate }} {{ inv.number }}</h2>
+        </div>
+        <span class="status" [attr.data-status]="inv.effectiveStatus">{{ statusLabel() }}</span>
+      </header>
+
+      <section class="meta">
+        <div>
+          <span class="text-label">{{ 'appointments.patient' | translate }}</span>
+          <strong>{{ inv.patientName }}</strong>
+        </div>
+        @if (inv.doctorName) {
+          <div>
+            <span class="text-label">{{ 'appointments.doctor' | translate }}</span>
+            <strong>{{ inv.doctorName }}</strong>
+          </div>
+        }
+        <div>
+          <span class="text-label">{{ 'accounts.issuedOn' | translate }}</span>
+          <strong>{{ inv.issuedAt | date: 'd MMM y' }}</strong>
+        </div>
+      </section>
+
+      <div class="table-wrap">
+        <table class="lines">
+          <thead>
+            <tr>
+              <th>{{ 'accounts.itemDescription' | translate }}</th>
+              <th class="num">{{ 'accounts.amount' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines(); track $index) {
+              <tr>
+                <td>{{ line.description }}</td>
+                <td class="num">{{ line.amount | number: '1.0-2' }} {{ currency() }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <dl class="totals">
+        @if (discount() > 0) {
+          <div>
+            <dt>{{ 'accounts.subtotal' | translate }}</dt>
+            <dd>{{ subtotal() | number: '1.0-2' }} {{ currency() }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'accounts.discount' | translate }}</dt>
+            <dd>− {{ discount() | number: '1.0-2' }} {{ currency() }}</dd>
+          </div>
+        }
+        <div class="grand">
+          <dt>{{ 'common.total' | translate }}</dt>
+          <dd>{{ inv.total | number: '1.0-2' }} {{ currency() }}</dd>
+        </div>
+        @if (inv.paid > 0 && inv.remaining > 0) {
+          <div>
+            <dt>{{ 'accounts.paid' | translate }}</dt>
+            <dd>{{ inv.paid | number: '1.0-2' }} {{ currency() }}</dd>
+          </div>
+          <div class="remaining owing">
+            <dt>{{ 'accounts.remaining' | translate }}</dt>
+            <dd>{{ inv.remaining | number: '1.0-2' }} {{ currency() }}</dd>
+          </div>
+        }
+      </dl>
+
+      @if (payments().length) {
+        <section class="payments">
+          <h3>{{ 'accounts.tabPayments' | translate }}</h3>
+          <ul>
+            @for (payment of payments(); track payment.id) {
+              <li>
+                <span>{{ payment.paidAt | date: 'd MMM y' }}</span>
+                <span class="ref">{{ payment.reference }}</span>
+                <strong>{{ payment.amount | number: '1.0-2' }} {{ currency() }}</strong>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (inv.notes) {
+        <section class="notes">
+          <span class="text-label">{{ 'common.notes' | translate }}</span>
+          <p>{{ inv.notes }}</p>
+        </section>
+      }
+    </article>
+  </div>
+} @else {
+  <ui-empty-state
+    icon="noResults"
+    tone="warning"
+    title="errors.notFoundTitle"
+    message="errors.notFoundBody"
+  >
+    <a mat-flat-button routerLink="/patients">{{ 'patients.title' | translate }}</a>
+  </ui-empty-state>
+}

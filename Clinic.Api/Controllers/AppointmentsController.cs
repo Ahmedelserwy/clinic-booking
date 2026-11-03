@@ -114,6 +114,43 @@ namespace Clinic.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Changes only the status: confirm, complete or cancel.
+        ///
+        /// Split from <see cref="Update"/> on purpose. The full update re-validates the doctor,
+        /// patient, working hours and overlap because the slot may have moved; a status change
+        /// moves nothing, so none of that applies. Routing it through the full update meant an
+        /// appointment that no longer passed those checks (or whose payload was rebuilt
+        /// incompletely by the client) could not even be cancelled.
+        /// </summary>
+        [Authorize(Roles = $"{ClinicRoles.Admin},{ClinicRoles.Doctor}")]
+        [HttpPut("{id}/status")]
+        public async Task<ActionResult> UpdateStatus(int id, UpdateAppointmentStatusDto dto)
+        {
+            var appointment = await _appointmentRepository.GetByIdAsync(id);
+            if (appointment == null)
+                return NotFound($"Appointment with id {id} not found.");
+
+            // The client sends the status by name. Parsed here, not bound to the enum, so a bad
+            // value is a clear 400 instead of an opaque model-binding failure.
+            if (!Enum.TryParse<AppointmentStatus>(dto.Status, ignoreCase: true, out var status)
+                || !Enum.IsDefined(status))
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = $"'{dto.Status}' is not a valid appointment status."
+                });
+            }
+
+            appointment.Status = status;
+            await _appointmentRepository.UpdateAsync(appointment);
+            await _unitOfWork.CompleteAsync();
+
+            var result = _mapper.Map<AppointmentDto>(appointment);
+            return Ok(result);
+        }
+
         #region Booking rules
 
         /// <summary>The local schedule interval and its absolute UTC interval.</summary>

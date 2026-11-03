@@ -1,0 +1,375 @@
+<<section class="exp" dir="rtl">
+  <!-- Header -->
+  <header class="exp__head">
+    <div>
+      <h1>المصروفات العامة</h1>
+      <p>سجّل مصروفات المحل اليومية مثل الإيجار والكهرباء والرواتب وتابع إجماليها شهرياً</p>
+    </div>
+    <button type="button" class="btn btn--primary" (click)="openAdd()">
+      <span class="btn__plus">+</span> إضافة مصروف
+    </button>
+  </header>
+
+  <!-- Summary cards -->
+  <div class="cards">
+    <article class="card card--hero">
+      <span class="card__label">مصروفات هذا الشهر</span>
+      <strong class="card__value">{{ fmt(summary()?.monthTotal ?? 0) }} <small>ج.م</small></strong>
+      @if (monthDelta() !== null) {
+        <span class="delta" [class.delta--up]="monthDelta()! > 0" [class.delta--down]="monthDelta()! <= 0">
+          {{ monthDelta()! > 0 ? '▲' : '▼' }} {{ fmt(monthDelta()! < 0 ? -monthDelta()! : monthDelta()!) }}% عن الشهر الماضي
+        </span>
+      } @else {
+        <span class="delta delta--muted">لا توجد بيانات للشهر الماضي</span>
+      }
+    </article>
+
+    <article class="card">
+      <span class="card__label">عدد عمليات الشهر</span>
+      <strong class="card__value">{{ summary()?.monthCount ?? 0 }}</strong>
+      <span class="card__hint">عملية مصروف</span>
+    </article>
+
+    <article class="card">
+      <span class="card__label">إجمالي السنة</span>
+      <strong class="card__value">{{ fmt(summary()?.yearTotal ?? 0) }} <small>ج.م</small></strong>
+      <span class="card__hint">منذ بداية العام الحالي</span>
+    </article>
+
+    <article class="card">
+      <span class="card__label">أكبر بند هذا الشهر</span>
+      @if (biggestCategory(); as b) {
+        <strong class="card__value card__value--sm card__value--cat">
+          <i class="dot dot--lg" [style.--c]="meta[b.category].color"></i>
+          {{ meta[b.category].label }}
+        </strong>
+        <span class="card__hint">{{ fmt(b.total) }} ج.م</span>
+      } @else {
+        <strong class="card__value card__value--sm">—</strong>
+        <span class="card__hint">لا توجد مصروفات بعد</span>
+      }
+    </article>
+  </div>
+
+  <!-- Category breakdown -->
+  @if (topCategories().length) {
+    <div class="panel breakdown">
+      <h2>توزيع مصروفات الشهر</h2>
+      <ul>
+        @for (c of topCategories(); track c.category) {
+          <li>
+            <span class="breakdown__name">
+              <i class="dot" [style.--c]="meta[c.category].color"></i>
+              {{ meta[c.category].label }}
+            </span>
+            <span class="breakdown__bar">
+              <span [style.width.%]="c.pct" [style.background]="meta[c.category].color"></span>
+            </span>
+            <span class="breakdown__val">{{ fmt(c.total) }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  <!-- Filters -->
+  <div class="panel filters">
+    <label class="field field--grow">
+      <span>بحث</span>
+      <input
+        type="search"
+        placeholder="ابحث بالبيان أو الملاحظات..."
+        [value]="search()"
+        (input)="onSearch($any($event.target).value)"
+      />
+    </label>
+    <label class="field">
+      <span>التصنيف</span>
+      <select [value]="categoryFilter()" (change)="setCategoryFilter($any($event.target).value)">
+        <option value="">كل التصنيفات</option>
+        @for (k of categoryKeys; track k) {
+          <option [value]="k">{{ meta[k].label }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span>من تاريخ</span>
+      <input type="date" [value]="from()" (change)="setFrom($any($event.target).value)" />
+    </label>
+    <label class="field">
+      <span>إلى تاريخ</span>
+      <input type="date" [value]="to()" (change)="setTo($any($event.target).value)" />
+    </label>
+    @if (hasFilters()) {
+      <button type="button" class="btn btn--ghost" (click)="clearFilters()">مسح الفلاتر</button>
+    }
+  </div>
+
+  <!-- Table -->
+  <div class="panel table-panel">
+    @if (loading()) {
+      <div class="skeletons">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="skeleton"></div>
+        }
+      </div>
+    } @else if (loadError()) {
+      <div class="state state--error">
+        <div class="state__icon">⚠️</div>
+        <p>{{ loadError() }}</p>
+        <button type="button" class="btn btn--primary" (click)="load()">إعادة المحاولة</button>
+      </div>
+    } @else if (items().length === 0) {
+      <div class="state">
+        <div class="state__icon">🧾</div>
+        @if (hasFilters()) {
+          <p>لا توجد نتائج مطابقة للفلاتر الحالية</p>
+          <button type="button" class="btn btn--ghost" (click)="clearFilters()">مسح الفلاتر</button>
+        } @else {
+          <p>لم تسجّل أي مصروفات بعد</p>
+          <button type="button" class="btn btn--primary" (click)="openAdd()">أضف أول مصروف</button>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>البيان</th>
+              <th>التصنيف</th>
+              <th>طريقة الدفع</th>
+              <th class="num">المبلغ</th>
+              <th class="actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of items(); track e.id) {
+              <tr>
+                <td class="muted" data-label="التاريخ">{{ fmtDate(e.expenseDate) }}</td>
+                <td data-label="البيان">
+                  <div class="title">
+                    {{ e.title }}
+                    @if (e.isRecurring) {
+                      <span class="tag tag--rec" title="مصروف متكرر">🔁 متكرر</span>
+                    }
+                  </div>
+                  @if (e.notes) {
+                    <div class="note">{{ e.notes }}</div>
+                  }
+                </td>
+                <td data-label="التصنيف">
+                  <span class="chip" [style.--c]="meta[e.category].color">
+                    <i class="dot"></i>
+                    {{ meta[e.category].label }}
+                  </span>
+                </td>
+                <td class="muted" data-label="طريقة الدفع">{{ paymentLabels[e.paymentMethod] }}</td>
+                <td class="num amount" data-label="المبلغ">{{ fmt(e.amount) }} <small>ج.م</small></td>
+                <td class="actions">
+                  <div class="row-actions">
+                    <button type="button" class="act" title="تعديل" aria-label="تعديل" (click)="openEdit(e)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" />
+                        <path d="M14.5 7.5l3 3" />
+                      </svg>
+                    </button>
+                    <button type="button" class="act act--danger" title="حذف" aria-label="حذف" (click)="askDelete(e)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16" />
+                        <path d="M10 11v6M14 11v6" />
+                        <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+                        <path d="M9 7V4h6v3" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pager">
+        <span class="pager__count">المصروفات: <b>{{ totalCount() }}</b></span>
+
+        <nav class="pager__nav" aria-label="التنقل بين الصفحات">
+          <button type="button" class="pg" [disabled]="page() === 1" (click)="goTo(page() - 1)" aria-label="السابق">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+          </button>
+
+          @for (p of pageList(); track $index) {
+            @if (p === 0) {
+              <span class="pg pg--gap" aria-hidden="true">…</span>
+            } @else {
+              <button
+                type="button"
+                class="pg"
+                [class.pg--on]="p === page()"
+                [attr.aria-current]="p === page() ? 'page' : null"
+                (click)="goTo(p)"
+              >
+                {{ p }}
+              </button>
+            }
+          }
+
+          <button type="button" class="pg" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)" aria-label="التالي">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+          </button>
+        </nav>
+
+        <label class="pager__size">
+          <span>صفوف:</span>
+          <select [value]="pageSize()" (change)="setPageSize($any($event.target).value)">
+            @for (n of pageSizes; track n) {
+              <option [value]="n">{{ n }}</option>
+            }
+          </select>
+        </label>
+      </footer>
+    }
+  </div>
+
+  <!-- Add / Edit modal -->
+  @if (modalOpen()) {
+    <div class="backdrop" appPortal dir="rtl" (click)="closeModal()">
+      <form
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exp-modal-title"
+        [formGroup]="form"
+        (ngSubmit)="save()"
+        (click)="$event.stopPropagation()"
+        novalidate
+      >
+        <header class="modal__head">
+          <div>
+            <h2 id="exp-modal-title">{{ editing() ? 'تعديل مصروف' : 'إضافة مصروف' }}</h2>
+            <p>{{ editing() ? 'عدّل البيانات ثم احفظ التغييرات' : 'سجّل مصروفاً جديداً في دفتر المحل' }}</p>
+          </div>
+          <button type="button" class="icon-btn" (click)="closeModal()" aria-label="إغلاق">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="modal__body">
+          <!-- The one number that matters, so it leads and is the largest thing in the form. -->
+          <label class="amount">
+            <span class="amount__label">المبلغ</span>
+            <span class="amount__box" [class.amount__box--err]="invalid('amount')">
+              <input
+                id="exp-amount"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                formControlName="amount"
+                placeholder="0.00"
+              />
+              <b>ج.م</b>
+            </span>
+            @if (invalid('amount')) {
+              <em class="err">أدخل مبلغاً أكبر من صفر</em>
+            }
+          </label>
+
+          <label class="field">
+            <span>البيان</span>
+            <input type="text" formControlName="title" placeholder="مثال: فاتورة كهرباء العيادة لشهر أكتوبر" maxlength="120" />
+            @if (invalid('title')) {
+              <em class="err">اكتب بياناً للمصروف</em>
+            }
+          </label>
+
+          <div class="row">
+            <label class="field">
+              <span>التصنيف</span>
+              <span class="select" [style.--c]="meta[form.controls.category.value].color">
+                <i class="select__dot" aria-hidden="true"></i>
+                <select formControlName="category">
+                  @for (k of categoryKeys; track k) {
+                    <option [value]="k">{{ meta[k].label }}</option>
+                  }
+                </select>
+              </span>
+            </label>
+            <label class="field">
+              <span>التاريخ</span>
+              <input type="date" formControlName="expenseDate" />
+              @if (invalid('expenseDate')) {
+                <em class="err">اختر التاريخ</em>
+              }
+            </label>
+          </div>
+
+          <div class="field">
+            <span>طريقة الدفع</span>
+            <div class="seg" role="group" aria-label="طريقة الدفع">
+              @for (p of paymentKeys; track p) {
+                <button
+                  type="button"
+                  [class.seg--on]="form.controls.paymentMethod.value === p"
+                  [attr.aria-pressed]="form.controls.paymentMethod.value === p"
+                  (click)="pickPayment(p)"
+                >
+                  {{ paymentLabels[p] }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <label class="switch recur">
+            <input type="checkbox" formControlName="isRecurring" />
+            <span class="switch__track"></span>
+            <span class="switch__text">
+              مصروف متكرر كل شهر
+              <small>مثل الإيجار والإنترنت</small>
+            </span>
+          </label>
+
+          <label class="field">
+            <span>ملاحظات (اختياري)</span>
+            <textarea rows="2" formControlName="notes" maxlength="500" placeholder="أي تفاصيل إضافية..."></textarea>
+          </label>
+        </div>
+
+        <footer class="modal__foot">
+          <button type="button" class="btn btn--ghost" (click)="closeModal()" [disabled]="saving()">إلغاء</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">
+            {{ saving() ? 'جارٍ الحفظ...' : editing() ? 'حفظ التعديلات' : 'إضافة المصروف' }}
+          </button>
+        </footer>
+      </form>
+    </div>
+  }
+
+  <!-- Delete confirm -->
+  @if (deleteTarget(); as t) {
+    <div class="backdrop" appPortal dir="rtl" (click)="cancelDelete()">
+      <div class="modal modal--sm" (click)="$event.stopPropagation()">
+        <div class="confirm">
+          <div class="state__icon">🗑️</div>
+          <h2>حذف المصروف؟</h2>
+          <p>سيتم حذف «{{ t.title }}» بقيمة {{ fmt(t.amount) }} ج.م نهائياً.</p>
+        </div>
+        <footer class="modal__foot">
+          <button type="button" class="btn btn--ghost" (click)="cancelDelete()" [disabled]="deleting()">إلغاء</button>
+          <button type="button" class="btn btn--danger" (click)="confirmDelete()" [disabled]="deleting()">
+            {{ deleting() ? 'جارٍ الحذف...' : 'نعم، احذف' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toast(); as t) {
+    <div class="toast" [class.toast--error]="t.type === 'error'" role="status">
+      {{ t.type === 'success' ? '✓' : '!' }} {{ t.text }}
+    </div>
+  }
+</section>

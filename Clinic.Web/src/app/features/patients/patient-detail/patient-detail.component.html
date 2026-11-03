@@ -56,6 +56,30 @@
       </section>
     }
 
+    @if (followUp(); as followUp) {
+      <section class="alerts">
+        <div class="alert" [class.alert-warning]="followUp.phase === 'today'" [class.alert-danger]="followUp.phase === 'overdue'" role="status">
+          <ui-icon name="appointments" size="md" />
+          <div>
+            <strong>
+              @if (followUp.phase === 'today') {
+                {{ 'patients.followUpToday' | translate }}
+              } @else {
+                {{ 'patients.followUpOverdue' | translate: { count: followUp.daysLate } }}
+              }
+            </strong>
+            <div>
+              @if (followUp.phase === 'today') {
+                {{ 'patients.followUpTodayHint' | translate }}
+              } @else {
+                {{ 'patients.followUpOverdueHint' | translate: { date: (followUp.date | date: 'd MMM y') } }}
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+
     <section class="summary">
       <div class="summary-card surface">
         <span class="text-label">{{ 'patients.lastVisit' | translate }}</span>
@@ -130,16 +154,23 @@
       <mat-tab [label]="'patients.tabHistory' | translate">
         <div class="tab-body">
           <ui-card title="records.timeline" icon="records">
-            @if (permissions.can('records.create')) {
-              <button actions mat-stroked-button type="button" (click)="addRecord()">
-                <ui-icon name="add" size="sm" />
-                {{ 'records.new' | translate }}
-              </button>
-            }
-
             @if (timeline().length) {
               <ui-timeline [entries]="timeline()">
                 <ng-template uiCell="actions" let-entry>
+                  @if (hasPrescription(entry)) {
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [matTooltip]="printLabel()"
+                      [attr.aria-label]="printLabel()"
+                      (click)="printPrescription(entry)"
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" />
+                        <rect x="7" y="14" width="10" height="7" rx="1" />
+                      </svg>
+                    </button>
+                  }
                   @if (permissions.can('records.edit')) {
                     <button
                       mat-icon-button
@@ -228,6 +259,13 @@
         <mat-tab [label]="'patients.tabBilling' | translate">
           <div class="tab-body">
             <ui-card title="accounts.tabInvoices" icon="invoice" [padded]="false">
+              @if (permissions.can('accounts.create')) {
+                <button actions mat-stroked-button type="button" (click)="addInvoice()">
+                  <ui-icon name="add" size="sm" />
+                  {{ 'accounts.newInvoice' | translate }}
+                </button>
+              }
+
               @if (invoices().length) {
                 <ul class="row-list">
                   @for (invoice of invoices(); track invoice.id) {
@@ -252,7 +290,13 @@
                   }
                 </ul>
               } @else {
-                <ui-empty-state icon="invoice" title="accounts.empty" message="accounts.emptyHint" />
+                <ui-empty-state icon="invoice" title="accounts.empty" message="accounts.emptyHint">
+                  @if (permissions.can('accounts.create')) {
+                    <button mat-flat-button type="button" (click)="addInvoice()">
+                      {{ 'accounts.newInvoice' | translate }}
+                    </button>
+                  }
+                </ui-empty-state>
               }
             </ui-card>
           </div>

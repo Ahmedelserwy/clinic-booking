@@ -23,87 +23,108 @@
   @if (!loading() && !doctors().length) {
     <ui-empty-state icon="doctors" title="doctors.empty" message="doctors.emptyHint" />
   } @else {
-    <div class="weeks">
-      @for (week of weeks(); track week.doctor.id) {
-        <ui-card [padded]="false" [hasHeader]="true">
-          <div class="doctor-head" actions>
-            <span class="badge badge-primary">
-              {{ 'schedules.hoursPerWeek' | translate: { count: week.weeklyHours } }}
-            </span>
-          </div>
+    <ui-card [padded]="false">
+      <!-- The matrix scrolls sideways on narrow screens rather than collapsing:
+           a week only makes sense laid out as a week. -->
+      <div class="matrix-scroll">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th class="corner" scope="col"></th>
+              @for (cell of rows()[0].cells; track cell.weekDay) {
+                <th scope="col" class="day-name">
+                  {{ 'weekday.short.' + cell.weekDay | translate }}
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.part.key) {
+              <tr>
+                <th scope="row" class="part">
+                  <strong>{{ 'schedules.part.' + row.part.key | translate }}</strong>
+                  <small dir="ltr">{{ row.range }}</small>
+                </th>
 
-          <div class="doctor-identity">
-            <span class="avatar">{{ week.doctor.name.charAt(0) }}</span>
-            <span class="doctor-text">
-              <strong>{{ week.doctor.name }}</strong>
-              <small>{{ week.doctor.specialization | specialty }}</small>
-            </span>
-          </div>
+                @for (cell of row.cells; track cell.weekDay) {
+                  <!-- Clicking anywhere in the cell is a mouse shortcut for the "+" button
+                       inside it, which is the keyboard- and screen-reader-friendly control. -->
+                  <td
+                    class="cell"
+                    [class.cell-covered]="cell.state === 'covered'"
+                    [class.cell-gap]="cell.state === 'gap'"
+                    [class.cell-off]="cell.state === 'off'"
+                    [class.cell-clickable]="permissions.can('schedules.create')"
+                    (click)="addShift(cell.weekDay, row.part)"
+                  >
+                    <div class="cell-inner">
+                      @switch (cell.state) {
+                        @case ('covered') {
+                          @for (chip of cell.chips; track chip.schedule.id) {
+                            <!-- Chip controls sit inside the cell, so they must not also trigger
+                                 the cell's "add" action. -->
+                            <div class="chip" [attr.data-c]="chip.color">
+                              <button
+                                type="button"
+                                class="chip-main"
+                                [disabled]="!permissions.can('schedules.edit')"
+                                [matTooltip]="chip.tooltip"
+                                (click)="$event.stopPropagation(); editShift(chip.schedule)"
+                              >
+                                <span class="dot">{{ chip.initial }}</span>
+                                <span class="chip-text">
+                                  <span class="chip-name">{{ chip.doctorName }}</span>
+                                  <span class="chip-time" dir="ltr">{{ chip.label }}</span>
+                                </span>
+                              </button>
+                              @if (permissions.can('schedules.delete')) {
+                                <button
+                                  type="button"
+                                  class="chip-remove"
+                                  [attr.aria-label]="'common.delete' | translate"
+                                  (click)="
+                                    $event.stopPropagation();
+                                    removeShift(chip.schedule, chip.doctorName)
+                                  "
+                                >
+                                  <ui-icon name="close" size="sm" />
+                                </button>
+                              }
+                            </div>
+                          }
+                        }
+                        @case ('gap') {
+                          <span class="gap-label">
+                            <ui-icon name="warning" size="sm" />
+                            {{ 'schedules.gap' | translate }}
+                          </span>
+                        }
+                        @case ('off') {
+                          <span class="off-label">{{ 'schedules.noHours' | translate }}</span>
+                        }
+                      }
 
-          <!-- The week grid scrolls horizontally on narrow screens rather than
-               collapsing: a week only makes sense laid out as a week. -->
-          <div class="grid-scroll">
-            <div class="grid">
-              @for (day of week.days; track day.weekDay) {
-                <!-- The cell itself is the button that fills it: clicking anywhere in a day
-                     opens the form already primed with this doctor and this day. -->
-                <div
-                  class="day"
-                  [class.day-off]="!day.shifts.length"
-                  [class.day-clickable]="permissions.can('schedules.create')"
-                  [attr.role]="permissions.can('schedules.create') ? 'button' : null"
-                  [attr.tabindex]="permissions.can('schedules.create') ? 0 : null"
-                  [attr.aria-label]="
-                    permissions.can('schedules.create') ? ('schedules.new' | translate) : null
-                  "
-                  (click)="addShift(week.doctor.id, day.weekDay)"
-                  (keydown.enter)="addShift(week.doctor.id, day.weekDay)"
-                  (keydown.space)="$event.preventDefault(); addShift(week.doctor.id, day.weekDay)"
-                >
-                  <span class="day-name">{{ 'weekday.short.' + day.weekDay | translate }}</span>
-
-                  @if (day.shifts.length) {
-                    @for (shift of day.shifts; track shift.id) {
-                      <!-- Shift controls sit inside the cell, so they must not also trigger
-                           the cell's "add" action. -->
-                      <div class="shift">
+                      @if (permissions.can('schedules.create')) {
                         <button
                           type="button"
-                          class="shift-time"
-                          [disabled]="!permissions.can('schedules.edit')"
-                          [matTooltip]="'common.edit' | translate"
-                          (click)="$event.stopPropagation(); editShift(shift)"
+                          class="add-cell"
+                          [attr.aria-label]="'schedules.new' | translate"
+                          (click)="$event.stopPropagation(); addShift(cell.weekDay, row.part)"
                         >
-                          {{ shift.label }}
+                          <ui-icon name="add" size="sm" />
                         </button>
-                        @if (permissions.can('schedules.delete')) {
-                          <button
-                            type="button"
-                            class="shift-remove"
-                            [attr.aria-label]="'common.delete' | translate"
-                            (click)="$event.stopPropagation(); removeShift(shift, week.doctor.name)"
-                          >
-                            <ui-icon name="close" size="sm" />
-                          </button>
-                        }
-                      </div>
-                    }
-                  } @else {
-                    <span class="off-label">{{ 'schedules.noHours' | translate }}</span>
-                  }
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </ui-card>
 
-                  @if (permissions.can('schedules.create')) {
-                    <span class="add-cell" aria-hidden="true">
-                      <ui-icon name="add" size="sm" />
-                    </span>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-        </ui-card>
-      }
-    </div>
+    <p class="hint">{{ 'schedules.coverageHint' | translate }}</p>
 
     @if (!loading() && !hasAnySchedule()) {
       <ui-empty-state icon="schedules" title="schedules.empty" message="schedules.emptyHint">

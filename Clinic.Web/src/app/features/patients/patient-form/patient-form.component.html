@@ -1,4 +1,4 @@
-<<form class="page" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+<form class="page" [formGroup]="form" (ngSubmit)="submit()" novalidate>
   <ui-page-header
     [title]="isEdit() ? 'patients.edit' : 'patients.new'"
     subtitle="patients.subtitle"
@@ -9,14 +9,17 @@
       { label: isEdit() ? 'common.edit' : 'common.create' },
     ]"
   >
+    <!-- Editing keeps Cancel / Save up here. When ADDING, they live at the bottom of the form instead. -->
     <div actions class="head-actions">
-      <button mat-stroked-button type="button" (click)="cancel()">
-        {{ 'common.cancel' | translate }}
-      </button>
-      <button mat-flat-button type="submit" [disabled]="saving() || loading()">
-        <ui-icon name="save" size="sm" />
-        {{ (saving() ? 'common.saving' : 'common.save') | translate }}
-      </button>
+      @if (isEdit()) {
+        <button mat-stroked-button type="button" (click)="cancel()">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button mat-flat-button type="submit" [disabled]="saving() || loading()">
+          <ui-icon name="save" size="sm" />
+          {{ (saving() ? 'common.saving' : 'common.save') | translate }}
+        </button>
+      }
     </div>
   </ui-page-header>
 
@@ -34,20 +37,13 @@
           </div>
 
           <div class="field">
-            <!-- Dates are never typed: the input is readonly and the picker owns it. -->
-            <mat-form-field>
-              <mat-label>{{ 'patients.dateOfBirth' | translate }}</mat-label>
-              <input
-                matInput
-                readonly
-                formControlName="dateOfBirth"
-                [matDatepicker]="dobPicker"
-                [max]="maxDate"
-                (click)="dobPicker.open()"
-              />
-              <mat-datepicker-toggle matIconSuffix [for]="dobPicker" />
-              <mat-datepicker #dobPicker startView="multi-year" />
-            </mat-form-field>
+            <!-- Dates are never typed: the picker owns the value. -->
+            <ui-date-picker
+              formControlName="dateOfBirth"
+              label="patients.dateOfBirth"
+              [max]="maxDate"
+              [invalid]="submitted() && form.controls.dateOfBirth.invalid"
+            />
             <ui-field-error [control]="form.controls.dateOfBirth" [submitted]="submitted()" />
           </div>
 
@@ -147,10 +143,23 @@
       <ui-card title="patients.sectionNotes" icon="note">
         <mat-form-field>
           <mat-label>{{ 'common.notes' | translate }}</mat-label>
-          <textarea matInput rows="5" formControlName="notes"></textarea>
+          <textarea matInput rows="3" formControlName="notes"></textarea>
         </mat-form-field>
         <ui-field-error [control]="form.controls.notes" [submitted]="submitted()" />
       </ui-card>
     </div>
   </div>
+
+  <!-- Adding a patient: fill in everything, and Save is the last thing on the page. -->
+  @if (!isEdit()) {
+    <div class="form-footer">
+      <button mat-stroked-button type="button" (click)="cancel()">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button mat-flat-button type="submit" [disabled]="saving() || loading()">
+        <ui-icon name="save" size="sm" />
+        {{ (saving() ? 'common.saving' : 'common.save') | translate }}
+      </button>
+    </div>
+  }
 </form>

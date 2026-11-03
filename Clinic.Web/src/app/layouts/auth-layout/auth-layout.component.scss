@@ -20,11 +20,11 @@
   gap: var(--sp-8);
   padding: var(--sp-8) var(--sp-9);
   overflow: hidden;
-  color: #eafffb;
+  color: #eaf1ff;
   background:
-    radial-gradient(90% 70% at 15% 10%, rgb(20 184 166 / 32%), transparent 62%),
-    radial-gradient(70% 60% at 90% 90%, rgb(37 99 235 / 26%), transparent 60%),
-    linear-gradient(155deg, #0b4f49 0%, #073b37 52%, #06292a 100%);
+    radial-gradient(90% 70% at 15% 10%, rgb(59 130 246 / 28%), transparent 62%),
+    radial-gradient(70% 60% at 90% 90%, rgb(91 149 224 / 18%), transparent 60%),
+    linear-gradient(155deg, #1b3a68 0%, #12284b 52%, #0b1b30 100%);
 }
 
 // A faint dot grid keeps the large gradient from reading as a flat wash.
@@ -56,7 +56,7 @@
   border-radius: var(--r-md);
   background: rgb(255 255 255 / 14%);
   border: 1px solid rgb(255 255 255 / 18%);
-  color: #7ff0e0;
+  color: #8db5ec;
 }
 
 .brand-text {
@@ -72,7 +72,7 @@
 
 .brand-text small {
   font-size: var(--fs-xs);
-  color: rgb(234 255 251 / 62%);
+  color: rgb(234 241 255 / 62%);
 }
 
 .pitch {
@@ -93,7 +93,7 @@
 .body {
   font-size: var(--fs-md);
   line-height: var(--lh-normal);
-  color: rgb(234 255 251 / 76%);
+  color: rgb(234 241 255 / 76%);
 }
 
 .features {
@@ -110,7 +110,7 @@
   align-items: center;
   gap: var(--sp-3);
   font-size: var(--fs-base);
-  color: rgb(234 255 251 / 88%);
+  color: rgb(234 241 255 / 88%);
 }
 
 .feature-icon {
@@ -121,12 +121,12 @@
   height: 32px;
   border-radius: var(--r-sm);
   background: rgb(255 255 255 / 10%);
-  color: #7ff0e0;
+  color: #8db5ec;
 }
 
 .legal {
   font-size: var(--fs-xs);
-  color: rgb(234 255 251 / 45%);
+  color: rgb(234 241 255 / 45%);
 }
 
 // -----------------------------------------------------------------------------

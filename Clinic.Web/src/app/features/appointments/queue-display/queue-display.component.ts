@@ -48,7 +48,7 @@ const TIPS: Tip[] = [
 // The stored status is matched loosely so "Canceled" / "Cancelled" both work.
 const statusOf = (appointment: Appointment): string =>
   String(appointment.status ?? '').toLowerCase();
-const isCancelled = (appointment: Appointment) => statusOf(appointment).includes('cancel');
+const isConfirmed = (appointment: Appointment) => statusOf(appointment).includes('confirm');
 const isCompleted = (appointment: Appointment) => statusOf(appointment).includes('complet');
 
 /** A 404 from this API's list endpoints means "nothing booked", not a failure. */
@@ -59,10 +59,11 @@ const isNotFound = (error: unknown): boolean =>
  * Full-screen waiting-room display. Opens in its own tab (no shell, no sidebar)
  * and is meant for a TV or a second monitor facing the patients.
  *
- * "Who is being called now" is derived from appointment times: new bookings are
- * Pending by default, so requiring Confirmed hid them from this screen. The
- * latest non-cancelled appointment whose start time has arrived is called until
- * the next appointment time arrives. Completed appointments are not called.
+ * Only appointments the front desk has confirmed (مؤكد) reach this screen. A new
+ * booking is Pending and stays off it until someone confirms it; Cancelled ones
+ * never appear. Of the confirmed appointments, the latest one whose start time
+ * has arrived is called until the next appointment time arrives. Completed
+ * appointments keep their number in the day's order but are not called.
  */
 @Component({
   selector: 'app-queue-display',
@@ -100,7 +101,10 @@ export class QueueDisplayComponent {
   /** Changes only when the calendar day does, so the queue is not rebuilt every second. */
   private readonly dayKey = computed(() => this.now().toDateString());
 
-  /** All non-cancelled appointments today, in scheduled order. */
+  /**
+   * Today's confirmed (and already completed) appointments, in scheduled order.
+   * Completed ones stay in the list so numbers do not shift once a patient is seen.
+   */
   private readonly today = computed<QueueEntry[]>(() => {
     const day = new Date(this.dayKey());
 
@@ -110,7 +114,7 @@ export class QueueDisplayComponent {
         (entry): entry is { appointment: Appointment; start: Date } =>
           entry.start !== null &&
           isSameDay(entry.start, day) &&
-          !isCancelled(entry.appointment)
+          (isConfirmed(entry.appointment) || isCompleted(entry.appointment))
       )
       .sort((a, b) => a.start.getTime() - b.start.getTime())
       .map((entry, index) => ({ appointment: entry.appointment, no: index + 1 }));

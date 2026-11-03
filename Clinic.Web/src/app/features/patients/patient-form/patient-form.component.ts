@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
-import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -14,6 +13,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { toDateOnly } from '../../../core/utils/date.util';
 import { nameValidators, notFutureValidator, phoneValidator } from '../../../core/utils/validators';
 import { CardComponent } from '../../../shared/ui/card/card.component';
+import { DatePickerComponent } from '../../../shared/ui/date-picker/date-picker/date-picker.component';
 import { FieldErrorComponent } from '../../../shared/ui/field-error/field-error.component';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
@@ -28,12 +28,12 @@ type ChipField = 'chronicDiseases' | 'currentMedications';
     ReactiveFormsModule,
     MatButtonModule,
     MatChipsModule,
-    MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     TranslatePipe,
     CardComponent,
+    DatePickerComponent,
     FieldErrorComponent,
     IconComponent,
     PageHeaderComponent,
@@ -76,7 +76,8 @@ export class PatientFormComponent {
       Validators.required,
       notFutureValidator,
     ]),
-    gender: ['Male', [Validators.required]],
+    // Starts empty so the receptionist must choose - never a silent "Male" on a female patient.
+    gender: ['', [Validators.required]],
 
     // contact
     phone: ['', [Validators.required, phoneValidator]],
@@ -150,7 +151,8 @@ export class PatientFormComponent {
       next: (patient) => {
         this.saving.set(false);
         this.notifications.success(
-          this.translate.instant(id ? 'patients.updated' : 'patients.created')
+          this.translate.instant(id ? 'patients.updated' : 'patients.created'),
+          { kind: id ? 'check' : 'heart', detail: payload.name }
         );
         void this.router.navigate(['/patients', patient.id]);
       },

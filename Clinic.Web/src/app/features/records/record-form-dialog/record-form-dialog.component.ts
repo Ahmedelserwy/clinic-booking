@@ -1,7 +1,8 @@
+import { TextFieldModule } from '@angular/cdk/text-field';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,6 +12,7 @@ import { MatTimepickerModule } from '@angular/material/timepicker';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import {
+  Medication,
   MedicalRecord,
   MedicalRecordsStore,
   RECORD_TYPES,
@@ -20,6 +22,7 @@ import {
 import { Doctor } from '../../../core/models/doctor.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { toDateOnly } from '../../../core/utils/date.util';
 import { notFutureValidator } from '../../../core/utils/validators';
 import { FieldErrorComponent } from '../../../shared/ui/field-error/field-error.component';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
@@ -42,14 +45,38 @@ export interface RecordDialogData {
   doctors: Doctor[];
   /** Present when editing. */
   record?: MedicalRecord;
+  /** Shown in a warning bar while writing, so they are never out of sight. */
+  allergies?: string[];
+  chronicDiseases?: string[];
+  /** Offers "Save & create invoice"; the caller decides, since it owns the permission. */
+  canInvoice?: boolean;
 }
 
+/** `true` = saved, `'invoice'` = saved and the caller should open a new invoice. */
+export type RecordDialogResult = boolean | 'invoice';
+
+/** Quick follow-up intervals, the way doctors say them: "come back in a week". */
+const FOLLOW_UP_PRESETS = [
+  { label: 'records.followUp3d', days: 3 },
+  { label: 'records.followUp1w', days: 7 },
+  { label: 'records.followUp2w', days: 14 },
+  { label: 'records.followUp1m', days: 30 },
+] as const;
+
+/**
+ * A consultation note, built for speed: type, date and time default to
+ * "visit, now" and fold away; the doctor is pre-selected (and hidden) when the
+ * clinic has only one; the title is generated from the diagnosis, never typed;
+ * the prescription is written as drug / dose / duration lines; the follow-up is
+ * one tap ("in a week").
+ */
 @Component({
   selector: 'app-record-form-dialog',
   imports: [
+    DatePipe,
     ReactiveFormsModule,
+    TextFieldModule,
     MatButtonModule,
-    MatChipsModule,
     MatDatepickerModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -71,12 +98,14 @@ export class RecordFormDialogComponent {
   private readonly store = inject(MedicalRecordsStore);
   private readonly translate = inject(TranslateService);
 
-  readonly dialogRef = inject<MatDialogRef<RecordFormDialogComponent, boolean>>(MatDialogRef);
+  readonly dialogRef = inject<MatDialogRef<RecordFormDialogComponent, RecordDialogResult>>(MatDialogRef);
   readonly data = inject<RecordDialogData>(MAT_DIALOG_DATA);
 
   protected readonly recordTypes = RECORD_TYPES;
   protected readonly typeMeta = RECORD_TYPE_META;
+  protected readonly followUpPresets = FOLLOW_UP_PRESETS;
   protected readonly maxDate = new Date();
+  protected readonly minFollowUp = new Date();
   protected readonly isEdit = Boolean(this.data.record);
 
   /** Editing always keeps the record's own patient; only a fresh entry may choose. */
@@ -85,8 +114,26 @@ export class RecordFormDialogComponent {
   protected readonly patients = this.data.patients ?? [];
   protected readonly picksPatient = this.fixedPatientId === null;
 
+  /** A clinic with a single doctor never needs to see the field. */
+  protected readonly showDoctor = this.data.doctors.length > 1;
+
+  protected readonly hasAlerts = Boolean(
+    this.data.allergies?.length || this.data.chronicDiseases?.length
+  );
+
   protected readonly submitted = signal(false);
-  protected readonly tags = signal<string[]>([...(this.data.record?.tags ?? [])]);
+  protected readonly editingWhen = signal(false);
+  protected readonly showVitals = signal(Boolean(this.data.record?.vitals));
+
+  /**
+   * Old records kept the whole prescription as one text; it lands in the note
+   * so nothing is lost. Records with structured lines keep their note as is.
+   */
+  private readonly initialNote =
+    this.data.record?.prescriptionNote ??
+    (this.data.record?.medications?.length ? '' : (this.data.record?.prescription ?? ''));
+
+  protected readonly showRxNote = signal(Boolean(this.initialNote));
 
   protected readonly form = this.formBuilder.nonNullable.group({
     patientId: this.formBuilder.control<number | null>(
@@ -103,12 +150,26 @@ export class RecordFormDialogComponent {
       this.data.record ? new Date(this.data.record.occurredAt) : new Date(),
       [Validators.required]
     ),
-    doctorId: this.formBuilder.control<number | null>(this.data.record?.doctorId ?? null),
-    title: [this.data.record?.title ?? '', [Validators.required, Validators.maxLength(120)]],
+    // A clinic with a single doctor never needs to choose.
+    doctorId: this.formBuilder.control<number | null>(
+      this.data.record?.doctorId ??
+        (this.data.doctors.length === 1 ? this.data.doctors[0].id : null)
+    ),
     complaint: [this.data.record?.complaint ?? '', [Validators.maxLength(500)]],
+    examination: [this.data.record?.examination ?? '', [Validators.maxLength(500)]],
     diagnosis: [this.data.record?.diagnosis ?? '', [Validators.maxLength(500)]],
+    requestedTests: [this.data.record?.requestedTests ?? '', [Validators.maxLength(300)]],
+    // Always at least one empty line, so a new prescription starts ready to type.
+    medications: this.formBuilder.array(
+      (this.data.record?.medications?.length ? this.data.record.medications : [undefined]).map(
+        (item) => this.medicationGroup(item)
+      )
+    ),
+    prescriptionNote: [this.initialNote, [Validators.maxLength(500)]],
     treatment: [this.data.record?.treatment ?? '', [Validators.maxLength(500)]],
-    prescription: [this.data.record?.prescription ?? '', [Validators.maxLength(1000)]],
+    followUpDate: this.formBuilder.control<Date | null>(
+      this.data.record?.followUpDate ? new Date(this.data.record.followUpDate) : null
+    ),
     bloodPressure: [this.data.record?.vitals?.bloodPressure ?? '', [Validators.maxLength(12)]],
     temperature: this.formBuilder.control<number | null>(
       this.data.record?.vitals?.temperature ?? null,
@@ -122,25 +183,74 @@ export class RecordFormDialogComponent {
       Validators.min(1),
       Validators.max(400),
     ]),
+    bloodSugar: this.formBuilder.control<number | null>(
+      this.data.record?.vitals?.bloodSugar ?? null,
+      [Validators.min(10), Validators.max(1000)]
+    ),
+    oxygenSaturation: this.formBuilder.control<number | null>(
+      this.data.record?.vitals?.oxygenSaturation ?? null,
+      [Validators.min(50), Validators.max(100)]
+    ),
   });
 
-  protected addTag(event: MatChipInputEvent): void {
-    const value = event.value.trim();
-    event.chipInput.clear();
+  protected get medications() {
+    return this.form.controls.medications;
+  }
 
-    if (value && !this.tags().some((tag) => tag.toLowerCase() === value.toLowerCase())) {
-      this.tags.update((tags) => [...tags, value]);
+  protected addMedication(): void {
+    this.medications.push(this.medicationGroup());
+  }
+
+  protected removeMedication(index: number): void {
+    this.medications.removeAt(index);
+  }
+
+  /** `null` clears the follow-up. Counted from today, so it can never land in the past. */
+  protected setFollowUp(days: number | null): void {
+    const control = this.form.controls.followUpDate;
+    if (days === null) {
+      control.setValue(null);
+    } else {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      control.setValue(date);
     }
+    control.markAsDirty();
   }
 
-  protected removeTag(tag: string): void {
-    this.tags.update((tags) => tags.filter((entry) => entry !== tag));
-  }
-
-  protected submit(): void {
+  protected submit(andInvoice = false): void {
     this.submitted.set(true);
 
+    // A dose with no drug name is a mistake, not an empty line.
+    for (const row of this.medications.controls) {
+      const { name, dosage, duration } = row.getRawValue();
+      if (!name.trim() && (dosage.trim() || duration.trim())) {
+        row.controls.name.setErrors({ required: true });
+      }
+    }
+
     if (this.form.invalid) {
+      // Invalid fields live in the folded sections; open them so the error is visible.
+      if (
+        this.form.controls.occurredDate.invalid ||
+        this.form.controls.occurredTime.invalid ||
+        this.form.controls.type.invalid
+      ) {
+        this.editingWhen.set(true);
+      }
+      if (
+        this.form.controls.temperature.invalid ||
+        this.form.controls.pulse.invalid ||
+        this.form.controls.weight.invalid ||
+        this.form.controls.bloodPressure.invalid ||
+        this.form.controls.bloodSugar.invalid ||
+        this.form.controls.oxygenSaturation.invalid
+      ) {
+        this.showVitals.set(true);
+      }
+      if (this.form.controls.prescriptionNote.invalid) {
+        this.showRxNote.set(true);
+      }
       this.form.markAllAsTouched();
       return;
     }
@@ -159,8 +269,19 @@ export class RecordFormDialogComponent {
       temperature: raw.temperature ?? undefined,
       pulse: raw.pulse ?? undefined,
       weight: raw.weight ?? undefined,
+      bloodSugar: raw.bloodSugar ?? undefined,
+      oxygenSaturation: raw.oxygenSaturation ?? undefined,
     };
     const hasVitals = Object.values(vitals).some((value) => value !== undefined);
+
+    const medications: Medication[] = raw.medications
+      .filter((row) => row.name.trim())
+      .map((row) => ({
+        name: row.name.trim(),
+        dosage: row.dosage.trim() || undefined,
+        duration: row.duration.trim() || undefined,
+      }));
+    const prescriptionNote = raw.prescriptionNote.trim();
 
     const payload = {
       patientId,
@@ -169,13 +290,18 @@ export class RecordFormDialogComponent {
       doctorName: doctor?.name,
       type: raw.type,
       occurredAt: this.combine(raw.occurredDate!, raw.occurredTime!),
-      title: raw.title.trim(),
+      title: this.buildTitle(raw.type, raw.diagnosis, raw.complaint),
       complaint: raw.complaint.trim() || undefined,
+      examination: raw.examination.trim() || undefined,
       diagnosis: raw.diagnosis.trim() || undefined,
+      requestedTests: raw.requestedTests.trim() || undefined,
+      medications: medications.length ? medications : undefined,
+      prescriptionNote: prescriptionNote || undefined,
+      prescription: this.buildPrescriptionText(medications, prescriptionNote) || undefined,
       treatment: raw.treatment.trim() || undefined,
-      prescription: raw.prescription.trim() || undefined,
+      followUpDate: raw.followUpDate ? toDateOnly(raw.followUpDate) : undefined,
       vitals: hasVitals ? vitals : undefined,
-      tags: this.tags(),
+      tags: this.data.record?.tags ?? [],
       recordedBy: this.auth.currentUser?.displayName ?? '',
     };
 
@@ -187,7 +313,38 @@ export class RecordFormDialogComponent {
       this.notifications.success(this.translate.instant('records.created'));
     }
 
-    this.dialogRef.close(true);
+    this.dialogRef.close(andInvoice ? 'invoice' : true);
+  }
+
+  private medicationGroup(item?: Medication) {
+    return this.formBuilder.nonNullable.group({
+      name: [item?.name ?? '', [Validators.maxLength(120)]],
+      dosage: [item?.dosage ?? '', [Validators.maxLength(120)]],
+      duration: [item?.duration ?? '', [Validators.maxLength(60)]],
+    });
+  }
+
+  /** The plain-text prescription every text-only screen and print layout reads. */
+  private buildPrescriptionText(medications: Medication[], note: string): string {
+    const lines = medications.map((item, index) =>
+      [`${index + 1}. ${item.name}`, item.dosage, item.duration].filter(Boolean).join(' - ')
+    );
+    if (note) {
+      lines.push(note);
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * Doctors don't name their visits. The headline is the diagnosis, else the
+   * complaint, else the entry type, so the timeline always reads sensibly.
+   */
+  private buildTitle(type: RecordType, diagnosis: string, complaint: string): string {
+    const source =
+      diagnosis.trim() ||
+      complaint.trim() ||
+      this.translate.instant(this.typeMeta[type].label);
+    return source.split('\n')[0].trim().slice(0, 120);
   }
 
   /** Merges the two pickers into the single instant the record is filed under. */

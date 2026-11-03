@@ -1,243 +1,257 @@
 <div class="page">
-  <ui-page-header title="dashboard.title" [subtitle]="greeting()">
+  <ui-page-header [title]="greeting()" [subtitle]="subtitle()">
     <div actions class="head-actions">
-      <button mat-stroked-button type="button" (click)="refresh()">
-        <ui-icon name="refresh" size="sm" />
-        {{ 'common.refresh' | translate }}
-      </button>
-      <a mat-flat-button routerLink="/appointments/new">
-        <ui-icon name="add" size="sm" />
+      <a mat-stroked-button class="btn-patient" routerLink="/patients/new">
+        <ui-icon name="userAdd" size="sm" />
+        {{ 'dashboard.quickNewPatient' | translate }}
+      </a>
+      <a mat-flat-button class="btn-appt" routerLink="/appointments/new">
+        <ui-icon name="appointments" size="sm" />
         {{ 'dashboard.quickNewAppointment' | translate }}
       </a>
     </div>
   </ui-page-header>
 
-  <!-- Headline figures ---------------------------------------------------- -->
-  <section class="stats">
-    <ui-stat-card
-      label="dashboard.todaysPatients"
-      icon="patients"
-      tone="primary"
-      route="/patients"
-      [value]="todaysPatients()"
-      [loading]="loading()"
-      [caption]="'patients.title'"
-    />
-    <ui-stat-card
-      label="dashboard.todaysAppointments"
-      icon="appointments"
-      tone="info"
-      route="/appointments"
-      [value]="todaysAppointments().length"
-      [loading]="loading()"
-    />
-    <ui-stat-card
-      label="dashboard.upcomingAppointments"
-      icon="calendarCheck"
-      tone="success"
-      route="/appointments"
-      [value]="upcomingAppointments().length"
-      [loading]="loading()"
-    />
-    @if (permissions.can('accounts.view')) {
-      <ui-stat-card
-        label="dashboard.revenueToday"
-        icon="money"
-        tone="warning"
-        route="/accounts"
-        [value]="revenueToday()"
-        [unit]="currency()"
-        [loading]="loading()"
-        [caption]="'dashboard.revenueMonth'"
-      />
+  <!-- Row 1: hero + three KPI cards ------------------------------------- -->
+  <section class="r1" [class.is-loading]="loading()">
+    <div class="hero">
+      <span class="hero-label">
+        <span class="hero-icon"><ui-icon name="appointments" size="sm" /></span>
+        {{ 'dashboard.todaysAppointments' | translate }}
+      </span>
+      <div class="hero-num">
+        <strong>{{ todaysAppointments().length }}</strong>
+        <span>{{ text('dashboard.appointmentsUnit', 'موعدًا', 'appointments') }}</span>
+      </div>
+
+      <div class="seg" aria-hidden="true">
+        @for (seg of segments(); track seg.key) {
+          <i class="seg-{{ seg.key }}" [style.width.%]="seg.pct"></i>
+        }
+      </div>
+
+      <ul class="leg">
+        <li class="lg lg-completed"><i class="d-completed"></i>{{ 'dashboard.statusCompleted' | translate }} <b>{{ statusCounts().completed }}</b></li>
+        <li class="lg lg-inProgress"><i class="d-inProgress"></i>{{ 'dashboard.statusInProgress' | translate }} <b>{{ statusCounts().inProgress }}</b></li>
+        <li class="lg lg-upcoming"><i class="d-upcoming"></i>{{ 'dashboard.statusUpcoming' | translate }} <b>{{ statusCounts().upcoming }}</b></li>
+        @if (statusCounts().cancelled > 0) {
+          <li class="lg lg-cancelled"><i class="d-cancelled"></i>{{ 'dashboard.statusCancelled' | translate }} <b>{{ statusCounts().cancelled }}</b></li>
+        }
+      </ul>
+    </div>
+
+    @if (showMoney()) {
+      <a class="kpi kpi-green" routerLink="/reports/dailyIncome">
+        <span class="kpi-head">
+          <span class="kpi-icon"><ui-icon name="payment" size="sm" /></span>
+          {{ 'dashboard.revenueToday' | translate }}
+        </span>
+        <strong class="kpi-value">
+          <bdi>{{ money(revenueToday()) }}</bdi> <small>{{ currency() }}</small>
+        </strong>
+        @if (revenueDelta() !== null) {
+          <span class="dl" [class.up]="revenueDelta()! >= 0" [class.dn]="revenueDelta()! < 0">
+            <bdi dir="ltr">
+              {{ revenueDelta()! > 0 ? '▲' : revenueDelta()! < 0 ? '▼' : '=' }}
+              {{ revenueDelta()! < 0 ? -revenueDelta()! : revenueDelta() }}%
+            </bdi>
+            {{ text('dashboard.vsYesterday', 'عن أمس', 'vs yesterday') }}
+          </span>
+        } @else {
+          <span class="dl nt"><ui-icon name="payment" size="sm" /> {{ text('dashboard.today', 'إجمالي اليوم', 'Total today') }}</span>
+        }
+      </a>
     } @else {
-      <ui-stat-card
-        label="patients.title"
-        icon="user"
-        tone="neutral"
-        route="/patients"
-        [value]="totalPatients()"
-        [loading]="loading()"
-      />
-    }
-  </section>
-
-  <!-- Charts --------------------------------------------------------------- -->
-  <section class="charts">
-    <ui-card title="dashboard.appointmentsByDay" subtitle="common.last30Days">
-      <ui-chart
-        type="column"
-        tone="primary"
-        caption="dashboard.appointmentsByDay"
-        [points]="appointmentTrend()"
-      />
-    </ui-card>
-
-    @if (permissions.can('accounts.view')) {
-      <ui-card title="dashboard.revenueTrend" subtitle="common.last30Days">
-        <ui-chart
-          type="line"
-          tone="accent"
-          caption="dashboard.revenueTrend"
-          [unit]="currency()"
-          [points]="revenueTrend()"
-        />
-      </ui-card>
-    }
-  </section>
-
-  <!-- Operational detail --------------------------------------------------- -->
-  <section class="columns">
-    <ui-card title="dashboard.todaysAppointments" icon="appointments" [padded]="false">
-      <a actions mat-button routerLink="/appointments">
-        {{ 'common.viewAll' | translate }}
+      <a class="kpi kpi-green" routerLink="/appointments">
+        <span class="kpi-head">
+          <span class="kpi-icon"><ui-icon name="calendarCheck" size="sm" /></span>
+          {{ text('dashboard.completedToday', 'المكتملة اليوم', 'Completed today') }}
+        </span>
+        <strong class="kpi-value"><bdi>{{ statusCounts().completed }}</bdi></strong>
+        <span class="dl up"><ui-icon name="calendarCheck" size="sm" /> {{ 'dashboard.statusCompleted' | translate }}</span>
       </a>
+    }
 
-      @if (todaysAppointments().length) {
-        <ul class="list">
-          @for (appointment of todaysAppointments(); track appointment.id) {
-            <li>
-              <span class="time">{{ appointment.appointmentDate | date: 'h:mm a' }}</span>
-              <span class="list-body">
-                <strong>{{ appointment.patientName }}</strong>
-                <small>{{ appointment.doctorName }}</small>
-              </span>
-              <a
-                class="list-link"
-                [routerLink]="['/appointments', appointment.id]"
-                [attr.aria-label]="'common.view' | translate"
-              >
-                <ui-icon name="chevronRight" size="sm" />
-              </a>
-            </li>
-          }
-        </ul>
-      } @else {
-        <ui-empty-state
-          [compact]="true"
-          icon="calendarCheck"
-          title="dashboard.noAppointmentsToday"
-          message="dashboard.noAppointmentsTodayHint"
-        >
-          <a mat-flat-button routerLink="/appointments/new">
-            {{ 'appointments.new' | translate }}
+    <a class="kpi kpi-violet" routerLink="/patients">
+      <span class="kpi-head">
+        <span class="kpi-icon"><ui-icon name="patients" size="sm" /></span>
+        {{ 'dashboard.todaysPatients' | translate }}
+      </span>
+      <strong class="kpi-value">
+        <bdi>{{ todaysPatients() }}</bdi> <small>{{ text('dashboard.patientsUnit', 'مريض', 'patients') }}</small>
+      </strong>
+      <span class="dl nt"><ui-icon name="patients" size="sm" /> {{ patientsSub() }}</span>
+    </a>
+
+    <a class="kpi" [class.kpi-green]="noShow().pct < 5" [class.kpi-red]="noShow().pct >= 5" routerLink="/appointments">
+      <span class="kpi-head">
+        <span class="kpi-icon"><ui-icon name="doctors" size="sm" /></span>
+        {{ text('dashboard.noShow', 'عدم الحضور', 'No-shows') }}
+      </span>
+      <strong class="kpi-value">
+        <bdi dir="ltr">{{ noShow().pct }}%</bdi> <small>{{ text('dashboard.last7Days', '٧ أيام', '7 days') }}</small>
+      </strong>
+      <span class="dl" [class.dn]="noShow().pct >= 5" [class.up]="noShow().pct < 5">
+        <ui-icon name="calendarCheck" size="sm" />
+        {{ noShowLabel() }}
+      </span>
+    </a>
+  </section>
+
+  <!-- Row 2: queue + weekly chart + services | actions + doctor load ------- -->
+  <section class="bento">
+    <div class="colL">
+      <ui-card class="card-queue" [title]="text('dashboard.queueNow', 'قائمة الانتظار الآن', 'Queue right now')" icon="patients" [padded]="false">
+        <div actions class="card-actions">
+          <span class="badge badge-info">{{ queueCountLabel() }}</span>
+          <a mat-button class="btn-viewall" routerLink="/appointments">
+            {{ 'common.viewAll' | translate }}
+            <ui-icon name="chevronRight" size="sm" />
           </a>
-        </ui-empty-state>
-      }
-    </ui-card>
+        </div>
 
-    <ui-card title="dashboard.doctorAvailability" icon="doctors" [padded]="false">
-      <a actions mat-button routerLink="/schedules">
-        {{ 'doctors.viewSchedule' | translate }}
-      </a>
-
-      @if (availability().length) {
-        <ul class="list">
-          @for (doctor of availability(); track doctor.id) {
-            <li>
-              <span class="avatar avatar-sm">{{ doctor.name.charAt(0) }}</span>
-              <span class="list-body">
-                <strong>{{ doctor.name }}</strong>
-                <small>{{ doctor.specialization | specialty }}</small>
-              </span>
-              <span class="availability">
-                @if (doctor.hours) {
-                  <span class="badge badge-success badge-dot">{{ doctor.hours }}</span>
-                  <small>{{ 'doctors.todaysLoad' | translate }}: {{ doctor.booked }}</small>
-                } @else {
-                  <span class="badge badge-neutral">{{ 'dashboard.offToday' | translate }}</span>
-                }
-              </span>
-            </li>
-          }
-        </ul>
-      } @else {
-        <ui-empty-state [compact]="true" icon="doctors" title="doctors.empty" message="doctors.emptyHint">
-          <a mat-flat-button routerLink="/doctors">{{ 'doctors.new' | translate }}</a>
-        </ui-empty-state>
-      }
-    </ui-card>
-  </section>
-
-  <section class="columns">
-    <ui-card title="dashboard.upcomingAppointments" icon="calendarCheck" [padded]="false">
-      @if (nextFive().length) {
-        <ul class="list">
-          @for (appointment of nextFive(); track appointment.id) {
-            <li>
-              <span class="date-chip">
-                <strong>{{ appointment.appointmentDate | date: 'd' }}</strong>
-                <small>{{ appointment.appointmentDate | date: 'MMM' }}</small>
-              </span>
-              <span class="list-body">
-                <strong>{{ appointment.patientName }}</strong>
-                <small>
-                  {{ appointment.doctorName }} · {{ appointment.appointmentDate | date: 'h:mm a' }}
-                </small>
-              </span>
-            </li>
-          }
-        </ul>
-      } @else {
-        <ui-empty-state
-          [compact]="true"
-          icon="calendarCheck"
-          title="appointments.empty"
-          message="appointments.emptyHint"
-        />
-      }
-    </ui-card>
-
-    @if (permissions.can('accounts.view')) {
-      <ui-card title="dashboard.recentPayments" icon="payment" [padded]="false">
-        <a actions mat-button routerLink="/accounts">{{ 'common.viewAll' | translate }}</a>
-
-        @if (recentPayments().length) {
-          <ul class="list">
-            @for (payment of recentPayments(); track payment.id) {
-              <li>
-                <span class="icon-tile icon-tile-success"><ui-icon name="money" size="sm" /></span>
-                <span class="list-body">
-                  <strong>{{ payment.patientName }}</strong>
-                  <small>{{ payment.invoiceNumber }} · {{ payment.paidAt | date: 'd MMM, h:mm a' }}</small>
+        @if (queue().length) {
+          <ul class="queue">
+            @for (item of queue(); track item.appointment.id) {
+              <li class="q" [class.is-now]="item.phase === 'now'" [class.is-next]="item.phase === 'next'">
+                <span class="no"><bdi>{{ item.appointment.appointmentDate | date: 'h:mm' }}</bdi></span>
+                <span class="q-body">
+                  <strong>
+                    <span class="avatar">{{ item.appointment.patientName.charAt(0) }}</span>
+                    {{ item.appointment.patientName }}
+                  </strong>
+                  <small>
+                    <ui-icon name="doctors" size="sm" />
+                    {{ item.appointment.doctorName }}
+                  </small>
                 </span>
-                <span class="amount money">{{ payment.amount }} {{ currency() }}</span>
+                <small class="q-time"><bdi>{{ relative(item.minutes) }}</bdi></small>
+                <span class="badge {{ phaseBadge(item.phase) }}">{{ phaseLabel(item.phase) }}</span>
+                <a class="list-link" [routerLink]="['/appointments', item.appointment.id]" [attr.aria-label]="'common.view' | translate">
+                  <ui-icon name="chevronRight" size="sm" />
+                </a>
               </li>
             }
           </ul>
         } @else {
-          <ui-empty-state
-            [compact]="true"
-            icon="payment"
-            title="accounts.empty"
-            message="accounts.emptyHint"
-          />
+          <ui-empty-state class="empty-queue" [compact]="true" icon="calendarCheck" title="dashboard.noAppointmentsToday" message="dashboard.noAppointmentsTodayHint">
+            <a mat-flat-button routerLink="/appointments/new">{{ 'appointments.new' | translate }}</a>
+          </ui-empty-state>
         }
       </ui-card>
-    }
-  </section>
 
-  <!-- Quick actions -------------------------------------------------------- -->
-  <ui-card title="dashboard.quickActions" icon="sparkles">
-    <div class="quick">
-      <a class="quick-action" routerLink="/appointments/new">
-        <span class="icon-tile icon-tile-primary"><ui-icon name="appointments" size="md" /></span>
-        {{ 'dashboard.quickNewAppointment' | translate }}
-      </a>
-      <a class="quick-action" routerLink="/patients/new">
-        <span class="icon-tile icon-tile-info"><ui-icon name="userAdd" size="md" /></span>
-        {{ 'dashboard.quickNewPatient' | translate }}
-      </a>
-      @if (permissions.can('accounts.create')) {
-        <a class="quick-action" routerLink="/accounts/payments/new">
-          <span class="icon-tile icon-tile-success"><ui-icon name="payment" size="md" /></span>
-          {{ 'dashboard.quickRecordPayment' | translate }}
-        </a>
-        <a class="quick-action" routerLink="/accounts/expenses/new">
-          <span class="icon-tile icon-tile-warning"><ui-icon name="expense" size="md" /></span>
-          {{ 'dashboard.quickAddExpense' | translate }}
-        </a>
-      }
+      <div class="pair">
+        <ui-card class="card-week" [title]="weekTitle()" [icon]="showMoney() ? 'payment' : 'appointments'">
+          <span actions class="tag tag-blue">
+            <ui-icon name="calendarCheck" size="sm" />
+            {{ weekTag() }}
+          </span>
+
+          <div class="week" role="img" [attr.aria-label]="weekTitle()">
+            @for (col of week(); track col.key) {
+              <div class="wcol" [class.is-today]="col.today" [class.is-future]="col.future" [attr.title]="col.tip">
+                <div class="wplot">
+                  <span class="wbar" [style.height.%]="col.pct">
+                    @if (!col.future && col.display) {
+                      <span class="wval"><bdi>{{ col.display }}</bdi></span>
+                    }
+                  </span>
+                </div>
+                <span class="wlabel">{{ col.label }}</span>
+              </div>
+            }
+          </div>
+        </ui-card>
+
+        <ui-card class="card-services" [title]="text('dashboard.topServices', 'الخدمات الأكثر طلبًا', 'Most requested services')" icon="sparkles">
+          <span actions class="tag tag-violet">
+            <ui-icon name="appointments" size="sm" />
+            {{ text('dashboard.thisMonth', 'هذا الشهر', 'This month') }}
+          </span>
+
+          @if (services().length) {
+            <div class="svs">
+              @for (s of services(); track s.name) {
+                <div class="sv">
+                  <span class="sv-ic ic-{{ s.tone }}">
+                    @switch (s.tone) {
+                      @case (1) { <ui-icon name="doctors" size="sm" /> }
+                      @case (2) { <ui-icon name="patients" size="sm" /> }
+                      @case (3) { <ui-icon name="calendarCheck" size="sm" /> }
+                      @default { <ui-icon name="sparkles" size="sm" /> }
+                    }
+                  </span>
+                  <span class="sv-main">
+                    <span class="sv-row">
+                      <span class="sv-name">{{ s.name }}</span>
+                      <b class="sv-pct pct-{{ s.tone }}" dir="ltr">{{ s.pct }}%</b>
+                    </span>
+                    <span class="pb"><i class="pbi-{{ s.tone }}" [style.width.%]="s.pct"></i></span>
+                  </span>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="muted-box">
+              <ui-icon name="sparkles" size="sm" />
+              <p class="muted">{{ text('dashboard.noServices', 'لا توجد بيانات خدمات لهذا الشهر', 'No service data for this month') }}</p>
+            </div>
+          }
+        </ui-card>
+      </div>
     </div>
-  </ui-card>
+
+    <div class="colR">
+      <ui-card class="card-attention" [class.is-clear]="!attention().length" title="dashboard.needsAttention" icon="sparkles">
+        @if (attention().length) {
+          <span actions class="badge badge-warning">{{ attention().length }}</span>
+          <div class="als">
+            @for (item of attention(); track item.id) {
+              <div class="al al-{{ item.tone }}">
+                <span class="al-icon"><ui-icon [name]="item.icon" size="sm" /></span>
+                <span class="al-body">
+                  <strong>{{ item.messageKey | translate: { count: item.count } }}</strong>
+                  <small>{{ item.hint }}</small>
+                </span>
+                <a class="al-btn" [routerLink]="item.route">
+                  {{ item.action }}
+                  <ui-icon name="chevronRight" size="sm" />
+                </a>
+              </div>
+            }
+          </div>
+        } @else {
+          <ui-empty-state class="empty-ok" [compact]="true" icon="calendarCheck" title="dashboard.allClear" message="dashboard.allClearHint" />
+        }
+      </ui-card>
+
+      <ui-card class="card-doctors" [title]="text('dashboard.doctorLoad', 'حمل الأطباء اليوم', 'Doctor load today')" icon="doctors">
+        @if (doctorLoad().length) {
+          <div class="drs">
+            @for (d of doctorLoad(); track d.id) {
+              <div class="dr">
+                <div class="dr-top">
+                  <span class="dr-who">
+                    <span class="dr-avatar lvl-bg-{{ d.level }}">{{ d.name.charAt(0) }}</span>
+                    <b>{{ d.name }}</b>
+                  </span>
+                  <small class="dr-line">
+                    <ui-icon name="appointments" size="sm" />
+                    {{ loadLine(d) }}
+                  </small>
+                </div>
+                <span class="pb pb-lg"><i class="lvl-{{ d.level }}" [style.width.%]="d.pct"></i></span>
+                <small class="dr-note note-{{ d.level }}">{{ loadNote(d) }}</small>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="muted-box">
+            <ui-icon name="doctors" size="sm" />
+            <p class="muted">{{ text('dashboard.noDoctorsToday', 'لا يوجد أطباء مجدولون اليوم', 'No doctors scheduled today') }}</p>
+          </div>
+        }
+      </ui-card>
+    </div>
+  </section>
 </div>

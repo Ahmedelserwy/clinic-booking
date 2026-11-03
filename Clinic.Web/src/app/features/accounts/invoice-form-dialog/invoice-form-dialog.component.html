@@ -19,10 +19,20 @@
         <mat-form-field>
           <mat-label>{{ 'appointments.doctor' | translate }}</mat-label>
           <mat-select formControlName="doctorId">
-            <mat-option [value]="null">{{ 'common.notSet' | translate }}</mat-option>
             @for (doctor of data.doctors; track doctor.id) {
               <mat-option [value]="doctor.id">{{ doctor.name }}</mat-option>
             }
+          </mat-select>
+        </mat-form-field>
+        <ui-field-error [control]="form.controls.doctorId" [submitted]="submitted()" />
+      </div>
+
+      <div class="field">
+        <mat-form-field>
+          <mat-label>{{ 'accounts.visitType' | translate }}</mat-label>
+          <mat-select formControlName="visitType">
+            <mat-option value="examination">{{ 'accounts.examination' | translate }}</mat-option>
+            <mat-option value="followUp">{{ 'accounts.followUp' | translate }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -41,97 +51,32 @@
           <mat-datepicker #issuedPicker />
         </mat-form-field>
       </div>
-
-      <div class="field">
-        <mat-form-field>
-          <mat-label>{{ 'accounts.dueOn' | translate }}</mat-label>
-          <input
-            matInput
-            readonly
-            formControlName="dueAt"
-            [matDatepicker]="duePicker"
-            (click)="duePicker.open()"
-          />
-          <mat-datepicker-toggle matIconSuffix [for]="duePicker" />
-          <mat-datepicker #duePicker />
-        </mat-form-field>
-      </div>
     </div>
 
-    <!-- Line items ------------------------------------------------------- -->
-    <section class="items">
-      <header class="items-head">
-        <span class="text-label">{{ 'accounts.lineItems' | translate }}</span>
-        <button mat-button type="button" (click)="addItem()">
-          <ui-icon name="add" size="sm" />
-          {{ 'common.add' | translate }}
-        </button>
-      </header>
-
-      <div formArrayName="items" class="item-rows">
-        @for (row of items.controls; track $index; let i = $index) {
-          <div class="item-row" [formGroupName]="i">
-            <mat-form-field class="field-compact grow">
-              <mat-label>{{ 'accounts.itemDescription' | translate }}</mat-label>
-              <input matInput type="text" formControlName="description" />
-            </mat-form-field>
-
-            <mat-form-field class="field-compact qty">
-              <mat-label>{{ 'accounts.quantity' | translate }}</mat-label>
-              <input matInput type="number" min="1" formControlName="quantity" />
-            </mat-form-field>
-
-            <mat-form-field class="field-compact price">
-              <mat-label>{{ 'accounts.unitPrice' | translate }}</mat-label>
-              <input matInput type="number" min="0" step="0.01" formControlName="unitPrice" />
-            </mat-form-field>
-
-            <button
-              mat-icon-button
-              type="button"
-              class="remove"
-              [disabled]="items.length === 1"
-              [matTooltip]="'common.delete' | translate"
-              (click)="removeItem(i)"
-            >
-              <ui-icon name="delete" size="sm" />
-            </button>
-          </div>
-        }
-      </div>
-    </section>
-
-    <!-- Totals ----------------------------------------------------------- -->
-    <section class="totals">
-      <div class="totals-inputs">
-        <mat-form-field class="field-compact">
-          <mat-label>{{ 'accounts.discount' | translate }}</mat-label>
-          <input matInput type="number" min="0" step="0.01" formControlName="discount" />
+    <div class="form-grid cols-2">
+      <div class="field">
+        <mat-form-field>
+          <mat-label>{{ 'accounts.fee' | translate }}</mat-label>
+          <input matInput type="number" min="0" step="0.01" formControlName="amount" />
           <span matTextSuffix>{{ currency }}</span>
         </mat-form-field>
-
-        <mat-form-field class="field-compact">
-          <mat-label>{{ 'accounts.tax' | translate }}</mat-label>
-          <input matInput type="number" min="0" max="100" step="0.1" formControlName="taxRate" />
-          <span matTextSuffix>%</span>
-        </mat-form-field>
+        <ui-field-error [control]="form.controls.amount" [submitted]="submitted()" />
       </div>
 
-      <dl class="totals-summary">
-        <div>
-          <dt>{{ 'accounts.subtotal' | translate }}</dt>
-          <dd>{{ subtotal() }} {{ currency }}</dd>
+      @if (!isEdit) {
+        <div class="field">
+          <mat-form-field>
+            <mat-label>{{ 'accounts.paymentMethod' | translate }}</mat-label>
+            <mat-select formControlName="paymentMethod">
+              <mat-option value="cash">{{ 'accounts.methodCash' | translate }}</mat-option>
+              <mat-option value="card">{{ 'accounts.methodCard' | translate }}</mat-option>
+              <mat-option value="transfer">{{ 'accounts.methodTransfer' | translate }}</mat-option>
+              <mat-option value="wallet">{{ 'accounts.methodWallet' | translate }}</mat-option>
+            </mat-select>
+          </mat-form-field>
         </div>
-        <div>
-          <dt>{{ 'accounts.tax' | translate }}</dt>
-          <dd>{{ taxAmount() }} {{ currency }}</dd>
-        </div>
-        <div class="grand">
-          <dt>{{ 'common.total' | translate }}</dt>
-          <dd>{{ total() }} {{ currency }}</dd>
-        </div>
-      </dl>
-    </section>
+      }
+    </div>
 
     <mat-form-field>
       <mat-label>{{ 'common.notes' | translate }}</mat-label>

@@ -1,4 +1,5 @@
 import { SPECIALTY_STORED_VALUES } from '../i18n/specialty';
+import { DoctorServiceItem, ReexaminationPolicy } from '../services/Doctor service.model';
 import { PageQuery } from './pagination.model';
 import { WeekDay } from './schedule.model';
 
@@ -13,6 +14,8 @@ export interface Doctor {
   consultationFee?: number;
   isActive?: boolean;
   imageUrl?: string;
+  services?: DoctorServiceItem[];
+  reexamination?: ReexaminationPolicy | null;
 }
 
 /**
@@ -38,6 +41,8 @@ export interface CreateDoctorRequest {
   isActive: boolean;
   /** Empty is legitimate: a doctor may be registered before their rota is agreed. */
   schedules: DoctorShiftRequest[];
+  services?: DoctorServiceItem[];
+  reexamination?: ReexaminationPolicy | null;
 }
 
 export interface UpdateDoctorRequest {
@@ -49,6 +54,8 @@ export interface UpdateDoctorRequest {
   consultationFee?: number | null;
   bio?: string | null;
   isActive: boolean;
+  services?: DoctorServiceItem[];
+  reexamination?: ReexaminationPolicy | null;
 }
 
 export interface DoctorQuery extends PageQuery {

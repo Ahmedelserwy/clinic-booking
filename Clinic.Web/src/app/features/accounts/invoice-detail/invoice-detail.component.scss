@@ -1,0 +1,132 @@
+.page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.head-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.invoice-sheet {
+  max-width: 820px;
+  width: 100%;
+  margin-inline: auto;
+  padding: 2rem;
+  display: grid;
+  gap: 1.75rem;
+  border-radius: var(--radius-lg, 12px);
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  .clinic {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+  }
+}
+
+.status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  &[data-status='paid'] { color: #1b7f4b; }
+  &[data-status='partial'] { color: #a86400; }
+  &[data-status='unpaid'] { color: #b3261e; }
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+
+  div {
+    display: grid;
+    gap: 0.15rem;
+  }
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.lines {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.65rem 0.5rem;
+    text-align: start;
+    border-bottom: 1px solid var(--border, #e3e6ec);
+  }
+
+  th {
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .num {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+.totals {
+  margin: 0;
+  margin-inline-start: auto;
+  width: min(320px, 100%);
+  display: grid;
+  gap: 0.4rem;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  dt { color: var(--text-subtle, #5b6473); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+  .grand {
+    padding-block: 0.5rem;
+    border-block: 1px solid var(--border, #e3e6ec);
+    font-weight: 700;
+    font-size: 1.1rem;
+    dt { color: inherit; }
+  }
+
+  .remaining {
+    font-weight: 700;
+    &.owing dd { color: #b3261e; }
+  }
+}
+
+.payments {
+  h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+  li { display: flex; gap: 1rem; justify-content: space-between; }
+  .ref { flex: 1; color: var(--text-subtle, #5b6473); }
+}
+
+.notes p {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 600px) {
+  .invoice-sheet { padding: 1rem; }
+}

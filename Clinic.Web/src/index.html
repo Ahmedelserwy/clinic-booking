@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
-  <title>Clinic — Care Operations</title>
+  <title>العيادة — إدارة الرعاية</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Clinic management system — patients, appointments, medical records and accounts.">
-  <meta name="theme-color" content="#0f766e" media="(prefers-color-scheme: light)">
+  <meta name="description" content="نظام إدارة العيادة — المرضى والمواعيد والسجلات الطبية والحسابات.">
+  <meta name="theme-color" content="#12284b" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -14,17 +14,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!--
-    Inter carries the Latin UI; IBM Plex Sans Arabic carries Arabic. Both are
-    loaded up front because the language can flip at runtime without a reload,
-    and a font swap mid-session is far more jarring than the extra request.
+    IBM Plex Sans Arabic is the primary UI font; Inter carries Latin text when
+    the language is switched to English. Both are loaded up front because the
+    language can flip at runtime without a reload, and a font swap mid-session
+    is far more jarring than the extra request.
   -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   >
   <!--
-    Applied before first paint so a dark-mode user never sees a white flash.
-    Mirrors ThemeService's storage key and fallback so the two cannot disagree.
+    Applied before first paint so a dark-mode user never sees a white flash and
+    an English user never sees the Arabic RTL layout flicker. Arabic RTL is the
+    default; mirrors ThemeService / LanguageService storage keys.
   -->
   <script>
     (function () {
@@ -35,15 +37,38 @@
         if (dark) document.documentElement.classList.add('dark');
 
         var lang = localStorage.getItem('clinic.lang');
-        if (lang === 'ar') {
-          document.documentElement.lang = 'ar';
-          document.documentElement.dir = 'rtl';
+        if (lang === 'en') {
+          document.documentElement.lang = 'en';
+          document.documentElement.dir = 'ltr';
         }
-      } catch (e) { /* storage blocked — fall back to the light LTR default */ }
+      } catch (e) { /* storage blocked — fall back to the Arabic RTL default */ }
     })();
   </script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="i-calcheck" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18 14.8c2 .6 3.3 2.4 3.5 5.2"/></symbol>
+<symbol id="i-userplus" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3 20c.6-3.6 3.2-5.5 7-5.5s6.4 1.9 7 5.5M19 8v6M16 11h6"/></symbol>
+<symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></symbol>
+<symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></symbol>
+<symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M13 16V8M18 16v-8"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4zM10 21h4"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.5"/></symbol>
+<symbol id="i-doctor" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5"/><path d="M5 21c.4-4 3-6 7-6s6.6 2 7 6M12 15v4M10 17h4"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 10-2.5 5.8M20 5v5h-5"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+</svg>
+
   <app-root></app-root>
 </body>
 </html>

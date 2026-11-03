@@ -31,7 +31,9 @@ import { IconName } from '../icon/icon.registry';
 
           <div class="head-text">
             @if (title(); as text) {
-              <h2 class="text-section-title">{{ text | translate }}</h2>
+              <h2 class="text-section-title head-title" [attr.title]="text | translate">
+                {{ text | translate }}
+              </h2>
             }
             @if (subtitle(); as text) {
               <p class="head-sub">{{ text | translate }}</p>
@@ -85,12 +87,23 @@ import { IconName } from '../icon/icon.registry';
       flex-direction: column;
       gap: 1px;
       min-width: 0;
-      flex: 1 1 auto;
+      flex: 1 1 0;
+    }
+
+    // A long title shrinks with an ellipsis instead of running under the actions slot.
+    .head-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .head-sub {
       font-size: var(--fs-xs);
       color: var(--c-text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .head-actions {

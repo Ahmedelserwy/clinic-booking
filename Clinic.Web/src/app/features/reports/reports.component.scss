@@ -2,96 +2,355 @@
   display: block;
 }
 
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  color: var(--c-text);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.btn-icon {
+  margin-inline-end: var(--sp-1);
+}
+
+// ------------------------------------------------------------------ header --
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0;
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-semibold);
+    line-height: 1.25;
+  }
+}
+
 .head-actions {
   display: flex;
   gap: var(--sp-2);
+  flex-wrap: wrap;
 }
 
+.print-head {
+  display: none;
+}
+
+// ------------------------------------------------------------ info banner --
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--c-primary) 18%, transparent);
+  border-radius: var(--r-md);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+
+  svg {
+    color: var(--c-primary-soft-fg);
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// ----------------------------------------------------------------- filters --
 .filters {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
   flex-wrap: wrap;
 }
 
 .date {
-  width: 180px;
+  width: 220px;
 }
 
-.quick {
+.search-btn {
+  height: 56px;
+  padding-inline: var(--sp-6);
+  border-radius: var(--r-full);
+  font-weight: var(--fw-semibold);
+}
+
+.chips {
   display: flex;
   gap: var(--sp-1);
-  margin-inline-start: auto;
   flex-wrap: wrap;
 }
 
-.stats {
-  display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+.chip {
+  height: 34px;
+  padding-inline: var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--c-text-muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-micro) var(--ease-standard),
+    color var(--dur-micro) var(--ease-standard),
+    border-color var(--dur-micro) var(--ease-standard);
+
+  &:hover {
+    color: var(--c-text);
+    background: var(--c-surface-2);
+  }
+
+  &.on {
+    color: var(--c-primary-soft-fg);
+    border-color: var(--c-primary);
+    background: var(--c-primary-soft);
+    font-weight: var(--fw-semibold);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+  }
 }
 
-.charts {
-  display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  align-items: start;
+// ------------------------------------------------------------------- cards --
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
+  overflow: hidden;
 }
 
-.insight-row {
-  display: grid;
-  gap: var(--sp-3);
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-
-.insight {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
-}
-
-.insight div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.insight strong {
+.section-title {
+  margin: var(--sp-2) 0 calc(var(--sp-2) * -1);
   font-size: var(--fs-md);
   font-weight: var(--fw-semibold);
 }
 
-// -----------------------------------------------------------------------------
-// Print — the report is a document, so the app chrome comes off.
-// -----------------------------------------------------------------------------
-@media print {
-  .filters,
-  .head-actions {
-    display: none;
+// ------------------------------------------------------------- table tools --
+.tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 1 320px;
+  min-width: 0;
+  height: 40px;
+  padding-inline: var(--sp-3);
+  color: var(--c-text-muted);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  transition: border-color var(--dur-micro) var(--ease-standard);
+
+  &:focus-within {
+    border-color: var(--c-primary);
   }
 
-  .charts,
-  .stats,
-  .insight-row {
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--c-text);
+    font: inherit;
+
+    &::placeholder {
+      color: var(--c-text-subtle);
+    }
+  }
+}
+
+.note {
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+}
+
+// ------------------------------------------------------------------- table --
+.table-wrap {
+  max-height: 520px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+th,
+td {
+  padding: 12px var(--sp-4);
+  text-align: start;
+  white-space: nowrap;
+
+  &.end {
+    text-align: end;
+  }
+}
+
+th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  font-weight: var(--fw-medium);
+  border-bottom: 1px solid var(--c-border);
+}
+
+td {
+  border-bottom: 1px solid var(--c-border);
+  font-variant-numeric: tabular-nums;
+
+  &.strong {
+    font-weight: var(--fw-semibold);
+  }
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:hover td {
+  background: var(--c-surface-2);
+}
+
+// The totals row closes each card.
+tr.total td {
+  border-top: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  font-size: var(--fs-base);
+}
+
+tr.group td {
+  padding-block: 8px;
+  background: var(--c-surface-2);
+  border-top: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+
+tbody tr.group:hover td {
+  background: var(--c-surface-2);
+}
+
+// Negative figures (a loss) are shown in red.
+td.neg {
+  color: var(--c-danger);
+}
+
+// ------------------------------------------------------------------- empty --
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-8) var(--sp-4);
+  color: var(--c-text-muted);
+  text-align: center;
+
+  svg {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// ---------------------------------------------------------------- footnote --
+.foot {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+}
+
+// ------------------------------------------------------------------- print --
+@media print {
+  .filters,
+  .banner,
+  .tools,
+  .foot,
+  .head-actions {
+    display: none !important;
+  }
+
+  .print-head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding-bottom: var(--sp-2);
+    border-bottom: 2px solid #000;
+    font-size: 0.85rem;
+  }
+
+  .reports,
+  .body {
+    gap: var(--sp-3);
+  }
+
+  .card {
     break-inside: avoid;
+    border-color: #999;
+    box-shadow: none;
+  }
+
+  .table-wrap {
+    max-height: none;
+    overflow: visible;
+  }
+
+  th {
+    position: static;
   }
 }
 
 @media (max-width: 640px) {
-  .stats {
-    grid-template-columns: 1fr 1fr;
+  .date {
+    flex: 1 1 140px;
+    width: auto;
   }
 
-  .quick {
-    margin-inline-start: 0;
+  .search-btn {
     width: 100%;
   }
 
-  .date {
-    flex: 1 1 auto;
-    width: auto;
+  .search {
+    flex-basis: 100%;
   }
 }

@@ -33,6 +33,17 @@
             <mat-form-field>
               <mat-label>{{ 'appointments.doctor' | translate }}</mat-label>
               <mat-select formControlName="doctorId">
+                <!-- What the closed field shows. Without this, Material copies the chosen
+                     option's markup flat, and name and speciality run together. -->
+                <mat-select-trigger>
+                  @if (selectedDoctor(); as doctor) {
+                    <span class="doctor-trigger">
+                      <span class="avatar avatar-sm">{{ doctor.name.charAt(0) }}</span>
+                      <strong class="doctor-trigger-name">{{ doctor.name }}</strong>
+                      <span class="doctor-trigger-spec">{{ doctor.specialization | specialty }}</span>
+                    </span>
+                  }
+                </mat-select-trigger>
                 @for (doctor of doctors(); track doctor.id) {
                   <mat-option [value]="doctor.id">
                     <span class="option-row">
@@ -87,7 +98,7 @@
             <ui-field-error [control]="form.controls.patientId" [submitted]="submitted()" />
           </ui-card>
 
-          <!-- 3 · Date -->
+          <!-- 3 · Day and time -->
           <ui-card title="appointments.stepSlot" icon="appointments">
             <span actions class="step-index">3</span>
 
@@ -97,32 +108,146 @@
                 {{ 'appointments.selectDoctorFirst' | translate }}
               </p>
             } @else {
-              <mat-form-field>
-                <mat-label>{{ 'appointments.date' | translate }}</mat-label>
-                <!-- readonly: dates are chosen, never typed, and `dateFilter`
-                     blocks every day the doctor does not work. -->
-                <input
-                  matInput
-                  readonly
-                  formControlName="date"
-                  [matDatepicker]="datePicker"
-                  [matDatepickerFilter]="dateFilter()"
-                  [min]="minDate"
-                  (click)="datePicker.open()"
+              <div class="days-head">
+                <span class="text-label">{{ labels().chooseDay }}</span>
+              </div>
+
+              <!-- Month shortcuts: one tap jumps the strip to that month. -->
+              <div class="months-wrap">
+                <button
+                  type="button"
+                  class="months-nav"
+                  [disabled]="monthsAtStart()"
+                  [attr.aria-label]="'common.previous' | translate"
+                  (click)="scrollMonths(-1)"
+                >
+                  <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+                    <path [attr.d]="isRtl() ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'" />
+                  </svg>
+                </button>
+
+                <div
+                  class="months"
+                  #monthRow
+                  role="group"
+                  [attr.aria-label]="labels().chooseDay"
+                  (scroll)="onMonthsScroll()"
+                >
+                  @for (month of monthOptions(); track month.key) {
+                    <button
+                      type="button"
+                      class="month-chip"
+                      [class.month-chip-on]="activeMonth() === month.key"
+                      [attr.data-chip]="month.key"
+                      [attr.aria-pressed]="activeMonth() === month.key"
+                      (click)="goToMonth(month.key)"
+                    >
+                      {{ month.label }}
+                    </button>
+                  }
+                </div>
+
+                <button
+                  type="button"
+                  class="months-nav"
+                  [disabled]="monthsAtEnd()"
+                  [attr.aria-label]="'common.next' | translate"
+                  (click)="scrollMonths(1)"
+                >
+                  <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+                    <path [attr.d]="isRtl() ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'" />
+                  </svg>
+                </button>
+              </div>
+
+              @if (!stripItems().length) {
+                <ui-empty-state
+                  [compact]="true"
+                  icon="calendarX"
+                  tone="warning"
+                  title="appointments.noSlots"
+                  message="appointments.noSlotsHint"
                 />
-                <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
-                <mat-datepicker #datePicker />
-                <mat-hint>{{ 'appointments.onlyWorkingDays' | translate }}</mat-hint>
-              </mat-form-field>
+              } @else {
+                <!-- Working days only, in one strip that keeps loading as it is scrolled. -->
+                <div class="days">
+                  <button
+                    type="button"
+                    class="days-nav"
+                    [disabled]="atStart()"
+                    [attr.aria-label]="'common.previous' | translate"
+                    (click)="scrollDays(-1)"
+                  >
+                    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+                      <path [attr.d]="isRtl() ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'" />
+                    </svg>
+                  </button>
+
+                  <div
+                    class="days-scroll"
+                    #dayScroller
+                    role="radiogroup"
+                    [attr.aria-label]="labels().chooseDay"
+                    (scroll)="onStripScroll()"
+                  >
+                    @for (item of stripItems(); track item.key) {
+                      @if (item.day; as day) {
+                        <button
+                          type="button"
+                          class="day"
+                          role="radio"
+                          [class.day-selected]="isDaySelected(day.date)"
+                          [class.day-full]="day.full"
+                          [disabled]="day.full"
+                          [attr.aria-checked]="isDaySelected(day.date)"
+                          [attr.data-month]="item.month"
+                          [attr.data-day]="day.key"
+                          (click)="pickDay(day)"
+                        >
+                          <span class="day-wd">
+                            {{ day.isToday ? ('common.today' | translate) : day.weekday }}
+                          </span>
+                          <strong class="day-num">{{ day.dayNumber }}</strong>
+                          <small class="day-free">{{ day.label }}</small>
+                        </button>
+                      } @else {
+                        <div
+                          class="month-mark"
+                          aria-hidden="true"
+                          [attr.data-month]="item.month"
+                          [attr.data-month-start]="item.month"
+                        >
+                          <span>{{ item.label }}</span>
+                          <small>{{ item.year }}</small>
+                        </div>
+                      }
+                    }
+                  </div>
+
+                  <button
+                    type="button"
+                    class="days-nav"
+                    [disabled]="atEnd()"
+                    [attr.aria-label]="'common.next' | translate"
+                    (click)="scrollDays(1)"
+                  >
+                    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+                      <path [attr.d]="isRtl() ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'" />
+                    </svg>
+                  </button>
+                </div>
+              }
               <ui-field-error [control]="form.controls.date" [submitted]="submitted()" />
 
-              <!-- Slots -->
+              <!-- Times: only what is still free -->
               @if (!selectedDate()) {
-                <p class="placeholder">
-                  <ui-icon name="info" size="sm" />
-                  {{ 'appointments.selectDateFirst' | translate }}
-                </p>
-              } @else if (!dayAvailability().slots.length) {
+                @if (stripItems().length) {
+                  <p class="placeholder">
+                    <ui-icon name="info" size="sm" />
+                    {{ 'appointments.selectDateFirst' | translate }}
+                  </p>
+                }
+              } @else if (!freeSlots().length) {
                 <ui-empty-state
                   [compact]="true"
                   icon="calendarX"
@@ -133,30 +258,22 @@
               } @else {
                 <div class="slots-head">
                   <span class="text-label">{{ 'appointments.availableSlots' | translate }}</span>
-                  <span class="badge badge-neutral">{{ shiftLabel() }}</span>
+                  <!-- Times are always written left to right, even inside an Arabic page. -->
+                  <span class="badge badge-neutral" dir="ltr">{{ shiftLabel() }}</span>
                 </div>
 
                 <div class="slots" role="radiogroup">
-                  @for (slot of dayAvailability().slots; track slot.start) {
+                  @for (slot of freeSlots(); track slot.start) {
                     <button
                       type="button"
                       class="slot"
+                      dir="ltr"
                       role="radio"
                       [class.slot-selected]="selectedSlot() === slot.start"
-                      [class.slot-taken]="!slot.available"
-                      [disabled]="!slot.available"
                       [attr.aria-checked]="selectedSlot() === slot.start"
-                      [title]="
-                        slot.available
-                          ? slot.label
-                          : (('appointments.bookedSlots' | translate) + ': ' + (slot.takenBy ?? ''))
-                      "
                       (click)="selectSlot(slot)"
                     >
                       {{ slot.label }}
-                      @if (!slot.available && !slot.past) {
-                        <small>{{ slot.takenBy }}</small>
-                      }
                     </button>
                   }
                 </div>
@@ -182,23 +299,12 @@
               </div>
               <div>
                 <dt>{{ 'appointments.date' | translate }}</dt>
-                <dd>
-                  {{
-                    selectedDate()
-                      ? selectedDate()!.toLocaleDateString(undefined, {
-                          weekday: 'long',
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })
-                      : ('common.notSet' | translate)
-                  }}
-                </dd>
+                <dd>{{ selectedDateLabel() ?? ('common.notSet' | translate) }}</dd>
               </div>
               <div>
                 <dt>{{ 'appointments.time' | translate }}</dt>
                 <dd class="review-time">
-                  {{ selectedSlotLabel() ?? ('common.notSet' | translate) }}
+                  <bdi>{{ selectedSlotLabel() ?? ('common.notSet' | translate) }}</bdi>
                 </dd>
               </div>
             </dl>

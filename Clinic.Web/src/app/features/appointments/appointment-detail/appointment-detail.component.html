@@ -20,13 +20,13 @@
           {{ statusLabel() | translate }}
         </span>
 
-        @if (permissions.can('appointments.edit') && !isPast()) {
+        @if (permissions.can('appointments.edit') && !isPast() && !isClosed()) {
           <button mat-stroked-button type="button" (click)="reschedule()">
             <ui-icon name="edit" size="sm" />
             {{ 'appointments.edit' | translate }}
           </button>
         }
-        @if (permissions.can('appointments.delete')) {
+        @if (permissions.can('appointments.delete') && !isClosed()) {
           <button mat-stroked-button type="button" class="danger-btn" (click)="cancel()">
             <ui-icon name="delete" size="sm" />
             {{ 'appointments.delete' | translate }}

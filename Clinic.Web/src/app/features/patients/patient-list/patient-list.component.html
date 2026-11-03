@@ -15,19 +15,8 @@
     <ui-search-field
       class="search"
       placeholder="patients.searchPlaceholder"
-      hint="patients.searchHint"
       (search)="onSearch($event)"
     />
-
-    <mat-form-field class="field-compact gender">
-      <mat-label>{{ 'patients.gender' | translate }}</mat-label>
-      <mat-select [value]="gender()" (valueChange)="onGender($event)">
-        <mat-option value="all">{{ 'common.all' | translate }}</mat-option>
-        <mat-option value="Male">{{ 'patients.genderMale' | translate }}</mat-option>
-        <mat-option value="Female">{{ 'patients.genderFemale' | translate }}</mat-option>
-        <mat-option value="Other">{{ 'patients.genderOther' | translate }}</mat-option>
-      </mat-select>
-    </mat-form-field>
 
     @if (hasFilters()) {
       <button mat-button type="button" (click)="clearFilters()">
@@ -38,13 +27,13 @@
   </div>
 
   <ui-data-table
-    [columns]="columns"
-    [rows]="visibleRows()"
+    [columns]="visibleColumns()"
+    [rows]="rows()"
     [loading]="loading()"
-    [rowActions]="rowActions"
     [sort]="sort()"
     [page]="page()"
     [total]="total()"
+    totalLabel="patients.title"
     [clickableRows]="true"
     [emptyTitle]="hasFilters() ? 'patients.emptyFiltered' : 'patients.empty'"
     [emptyMessage]="hasFilters() ? 'patients.emptyFilteredHint' : 'patients.emptyHint'"
@@ -52,23 +41,87 @@
     (sortChange)="onSort($event)"
     (pageChange)="onPage($event)"
     (rowClick)="openPatient($event)"
-    (action)="onRowAction($event)"
   >
     <ng-template uiCell="name" let-row>
       <div class="name-cell">
-        <span class="avatar avatar-sm">{{ row.name.charAt(0) }}</span>
+        <span class="avatar avatar-sm" [style.--h]="hue(row.name)">{{ row.name.charAt(0) }}</span>
         <span class="name-text">
-          <strong>{{ row.name }}</strong>
+          <a
+            class="name-link"
+            [routerLink]="['/patients', row.id]"
+            (click)="$event.stopPropagation()"
+          >
+            <strong>{{ row.name }}</strong>
+          </a>
           <small class="mobile-only">{{ row.phone }}</small>
+          @if (followUpFor(row); as followUp) {
+            <span
+              class="follow-up"
+              [class.is-overdue]="followUp.phase === 'overdue'"
+              role="status"
+            >
+              <span class="follow-up-dot" aria-hidden="true"></span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              @if (followUp.phase === 'today') {
+                {{ 'patients.followUpToday' | translate }}
+              } @else {
+                {{ 'patients.followUpOverdue' | translate: { count: followUp.daysLate } }}
+              }
+            </span>
+          }
         </span>
       </div>
+    </ng-template>
+
+    <ng-template uiCell="phone" let-row>
+      @if (row.phone) {
+        <span class="phone">
+          <a
+            class="phone-link"
+            [href]="'tel:' + row.phone"
+            dir="ltr"
+            (click)="$event.stopPropagation()"
+          >{{ row.phone }}</a>
+          <a
+            class="whatsapp"
+            [href]="whatsappUrl(row.phone)"
+            target="_blank"
+            rel="noopener"
+            (click)="$event.stopPropagation()"
+            aria-label="WhatsApp"
+            title="WhatsApp"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.25-1.38A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.18-1.14l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 1 1 6.97 3.85Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.09-.39-.12-.56.12-.16.25-.64.8-.78.97-.14.16-.29.18-.54.06a6.7 6.7 0 0 1-3.3-2.88c-.25-.43.25-.4.72-1.33.08-.16.04-.3-.02-.42-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.47c-.16 0-.43.06-.65.3-.23.25-.86.85-.86 2.07s.88 2.4 1 2.56c.12.16 1.74 2.65 4.2 3.72 1.56.67 2.17.73 2.95.61.48-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.23-.16-.48-.28Z"/>
+            </svg>
+          </a>
+        </span>
+      } @else {
+        <span class="text-subtle">—</span>
+      }
+    </ng-template>
+
+    <ng-template uiCell="lastVisit" let-row>
+      @if (lastVisitFor(row); as visit) {
+        <span class="last-visit">
+          <ui-icon name="appointments" size="sm" />
+          {{ formatVisit(visit) }}
+        </span>
+      } @else {
+        <span class="text-subtle">—</span>
+      }
     </ng-template>
 
     <ng-template uiCell="medical" let-row>
       @if (medicalFlags(row).length) {
         <div class="flags">
           @for (flag of medicalFlags(row); track flag.label + flag.tone) {
-            <span class="badge" [class]="'badge-' + flag.tone">{{ flag.label }}</span>
+            <span class="badge" [class]="'badge-' + flag.tone" [attr.title]="flag.title">{{ flag.label }}</span>
           }
         </div>
       } @else {

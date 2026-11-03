@@ -102,23 +102,23 @@ export const EN = {
     email: 'Enter a valid email address',
     minLength: 'Must be at least {{ min }} characters',
     maxLength: 'Must be {{ max }} characters or fewer',
-    min: 'Must be {{ min }} or more',
-    max: 'Must be {{ max }} or less',
-    pattern: 'The format is not valid',
+    min: 'Enter a value of {{ min }} or more',
+    max: 'Enter a value of {{ max }} or less',
+    pattern: 'Please check the format of this value',
     phone: 'Enter a valid phone number (11 digits, starting 010/011/012/015)',
     nationalId: 'Enter a valid 14-digit national ID',
-    passwordWeak: 'Use 8+ characters with an uppercase letter, a number and a symbol',
+    passwordWeak: 'Use at least 8 characters, including an uppercase letter, a number and a symbol',
     passwordMismatch: 'Passwords do not match',
     dateInvalid: 'Enter a valid date',
     dateFuture: 'The date cannot be in the future',
     datePast: 'The date cannot be in the past',
     timeRange: 'The end time must be after the start time',
-    duplicateShift: 'The same shift has been added twice',
-    usernamePattern: 'Use letters, digits and @ . _ - + only',
-    outsideWorkingDays: 'The doctor does not work on this day',
+    duplicateShift: 'This shift has already been added',
+    usernamePattern: 'Use only letters, numbers and the characters @ . _ - +',
+    outsideWorkingDays: 'The doctor is not available on this day',
     outsideWorkingHours: 'This time is outside the doctor’s working hours',
-    slotTaken: 'This slot is already booked',
-    overlap: 'This overlaps an existing appointment',
+    slotTaken: 'This time slot is no longer available',
+    overlap: 'This time overlaps with an existing appointment',
     positiveAmount: 'Enter an amount greater than zero',
   },
 
@@ -135,6 +135,7 @@ export const EN = {
     schedules: 'Schedules',
     records: 'Medical records',
     accounts: 'Billing',
+    expenses: 'Expenses',
     reports: 'Reports',
     users: 'Accounts',
     roles: 'Roles & permissions',
@@ -188,20 +189,46 @@ export const EN = {
     greetingMorning: 'Good morning, {{ name }}',
     greetingAfternoon: 'Good afternoon, {{ name }}',
     greetingEvening: 'Good evening, {{ name }}',
+    summary: 'Today you have {{ appointments }} appointments and {{ waiting }} waiting',
 
     todaysPatients: 'Today’s patients',
     todaysAppointments: 'Today’s appointments',
     upcomingAppointments: 'Upcoming appointments',
+    remainingToday: 'Remaining today',
     revenueToday: 'Revenue today',
     revenueMonth: 'Revenue this month',
     outstanding: 'Outstanding',
     recentPayments: 'Recent payments',
+    latestPayments: 'Latest payments',
     doctorAvailability: 'Doctor availability',
     calendar: 'Appointment calendar',
     quickActions: 'Quick actions',
     appointmentsByDay: 'Appointments over time',
     revenueTrend: 'Revenue trend',
     statusBreakdown: 'Appointment status',
+    appointmentStatusToday: 'Today’s appointment status',
+
+    last7Days: '7 days',
+    last30Days: '30 days',
+
+    statusCompleted: 'Completed',
+    statusInProgress: 'In progress',
+    statusUpcoming: 'Upcoming',
+    statusCancelled: 'Cancelled',
+
+    phaseNext: 'Next',
+    phasePast: 'Done',
+
+    waitingRoom: 'Waiting room',
+    live: 'Live',
+    waitMinutes: '{{ count }} min',
+
+    needsAttention: 'Needs attention',
+    allClear: 'All clear',
+    allClearHint: 'Nothing needs your attention right now.',
+    attentionPending: '{{ count }} appointments awaiting confirmation',
+    attentionTomorrow: '{{ count }} appointments tomorrow',
+    attentionConflict: '{{ count }} appointments with doctors who are off today',
 
     quickNewAppointment: 'Book appointment',
     quickNewPatient: 'Register patient',
@@ -273,6 +300,12 @@ export const EN = {
     genderFemale: 'Female',
     genderOther: 'Other',
 
+    // Follow-up reminders
+    followUpToday: 'Follow-up today',
+    followUpTodayHint: 'The doctor asked to see this patient again today.',
+    followUpOverdue: 'Follow-up overdue · {{ count }} d',
+    followUpOverdueHint: 'A follow-up was due on {{ date }} and the patient has not been seen since.',
+
     created: 'Patient registered.',
     updated: 'Patient updated.',
     deleted: 'Patient deleted.',
@@ -314,6 +347,33 @@ export const EN = {
     markDayOff: 'Remove every shift on this day',
     off: 'Off',
     scheduleInvalid: 'Fix the highlighted shifts before saving.',
+
+    // Services
+    services: 'Services',
+    servicesHint: 'Regular services this doctor provides, with a price for each',
+    addService: 'Add service',
+    removeService: 'Remove service',
+    serviceName: 'Service name',
+    servicePrice: 'Price',
+    serviceDuration: 'Duration (minutes)',
+    noServices: 'No services added yet',
+    serviceCount: '{{ count }} services',
+
+    // Re-examination
+    reexamTitle: 'Re-examination',
+    reexamEdit: 'Configure',
+    reexamOff: 'Not enabled',
+    reexamSummary: 'Within {{ days }} days for {{ fee }}',
+    reexamSummaryFree: 'Free within {{ days }} days',
+    reexamIntro:
+      'If the patient returns to the same doctor within the set period after the first visit, it is charged as a re-examination at the fee set here.',
+    reexamEnable: 'Allow re-examination',
+    reexamFee: 'Re-examination fee',
+    reexamFeeHint: 'Enter 0 to make it free',
+    reexamValidDays: 'Valid for (days)',
+    reexamValidDaysHint: 'How long after the first visit a return counts as a re-examination',
+    reexamRegularFee: 'Regular consultation fee: {{ fee }}',
+    reexamBadge: 'Re-exam',
 
     created: 'Doctor added.',
     updated: 'Doctor updated.',
@@ -378,8 +438,12 @@ export const EN = {
     statusLegend: 'Appointment statuses',
     changeStatus: 'Change status',
     statusChanged: 'Status updated.',
-    dragHint: 'Drag an appointment to move it. The change is saved only if the clinic’s rules allow it.',
-
+    dragHint:
+      'Drag an appointment to move it. The change is saved only if the clinic’s rules allow it.',
+    totalCount: 'Total: {{ count }}',
+    hiddenDoctors: '{{ count }} doctors off today',
+    hiddenDoctorsHint: 'These doctors have no working hours and no appointments on this day.',
+    clickToBook: 'Click an empty time inside a doctor’s working hours to book it.',
     emptyDay: 'No appointments for this day',
     emptyDayFiltered: 'No appointments match these filters on this day.',
     noResources: 'No doctors are working',
@@ -438,6 +502,17 @@ export const EN = {
     hoursPerWeek: '{{ count }} h / week',
     noHours: 'Not working',
 
+    // Coverage matrix: parts of the day, shown as rows.
+    part: {
+      morning: 'Morning',
+      noon: 'Noon',
+      evening: 'Evening',
+      night: 'Night',
+    },
+    gap: 'Gap',
+    coverageHint:
+      'Each chip is a doctor and their time within that part of the day; a shift that crosses two parts shows in both. “Gap” means nobody is working although the clinic is open before and after.',
+
     created: 'Working hours added.',
     updated: 'Working hours updated.',
     deleted: 'Working hours removed.',
@@ -466,17 +541,46 @@ export const EN = {
     typeProcedure: 'Procedure',
     typeNote: 'Note',
 
+    // Consultation form
     complaint: 'Chief complaint',
+    examination: 'Clinical examination',
     diagnosis: 'Diagnosis',
+    requestedTests: 'Requested tests & imaging',
     treatment: 'Treatment',
-    prescription: 'Prescription',
+    instructions: 'Patient instructions',
     attachments: 'Attachments',
     recordedBy: 'Recorded by',
+
+    // Prescription
+    prescription: 'Prescription',
+    medName: 'Drug name',
+    medDosage: 'Dose',
+    medDosageHint: '1 tablet x 3 daily after meals',
+    medDuration: 'Duration',
+    medDurationHint: '1 week',
+    addMedication: 'Add drug',
+    removeMedication: 'Remove drug',
+    prescriptionNote: 'Prescription notes',
+    addPrescriptionNote: 'Add note',
+
+    // Follow-up
+    followUpDate: 'Follow-up',
+    followUp3d: 'In 3 days',
+    followUp1w: 'In 1 week',
+    followUp2w: 'In 2 weeks',
+    followUp1m: 'In 1 month',
+    noFollowUp: 'No follow-up',
+
+    // Vitals
     vitals: 'Vitals',
     bloodPressure: 'Blood pressure',
     temperature: 'Temperature',
     pulse: 'Pulse',
+    bloodSugar: 'Blood sugar',
+    oxygenSaturation: 'Oxygen saturation',
     weight: 'Weight',
+
+    saveAndInvoice: 'Save & create invoice',
 
     created: 'Record added.',
     updated: 'Record updated.',
@@ -520,6 +624,12 @@ export const EN = {
     subtotal: 'Subtotal',
     discount: 'Discount',
     tax: 'Tax',
+
+    // Clinic invoice form: one doctor, one visit type, one fee.
+    visitType: 'Visit type',
+    examination: 'Examination',
+    followUp: 'Follow-up visit',
+    fee: 'Fee',
 
     payment: 'Payment',
     newPayment: 'Record payment',
@@ -656,8 +766,155 @@ export const EN = {
   },
 
   reports: {
+    // ---- hub ---------------------------------------------------------------
     title: 'Reports',
     subtitle: 'Operational and financial analysis.',
+    hubSubtitle: 'Choose a report to view, search, print or export.',
+    open: 'Open report',
+    back: 'Back to reports',
+
+    // ---- shared toolbar (report shell) --------------------------------------
+    print: 'Print',
+    from: 'From date',
+    to: 'To date',
+    thisWeek: 'This week',
+    thisMonth: 'This month',
+    last30: 'Last 30 days',
+    last7: 'Last 7 days',
+    last90: 'Last 90 days',
+    trend: 'Trend over the period',
+    searchReports: 'Search reports',
+    searchRows: 'Search in this report',
+    noResults: 'No reports match your search.',
+    generated: 'Generated',
+    chartCapped: 'Showing the last 30 days of the period',
+    tableTitle: 'Details',
+    rows: 'rows',
+
+    // ---- one entry per report (title + card description) --------------------
+    appointments: {
+      title: 'Appointments report',
+      desc: 'Every appointment in the period with its status',
+    },
+    doctors: {
+      title: 'Doctor performance',
+      desc: 'Appointments, patients and share per doctor',
+    },
+    patients: {
+      title: 'Patients report',
+      desc: 'New and returning patients, visits per patient',
+    },
+    revenue: {
+      title: 'Revenue report',
+      desc: 'Daily income and average revenue per visit',
+    },
+    expenses: {
+      title: 'Clinic expenses',
+      desc: 'Each expense with its category, newest first',
+    },
+    profitLoss: {
+      title: 'Profit & loss',
+      desc: 'Income minus expenses, net result per day',
+    },
+    records: {
+      title: 'Medical records report',
+      desc: 'Clinical records created during the period',
+    },
+    cancellations: {
+      title: 'Cancellations & no-shows',
+      desc: 'Lost appointments, who they affect and how often',
+    },
+    balances: {
+      title: 'Outstanding balances',
+      desc: 'Patients who owe money, largest first',
+    },
+    doctorFees: {
+      title: 'Doctor fees',
+      desc: 'Completed visits and fees earned per doctor',
+    },
+    dailyIncome: {
+      title: 'Clinic revenue',
+      desc: 'Cash, card and other collections per day, with refunds and expenses',
+    },
+    followUp: {
+      title: 'Patients to follow up',
+      desc: 'Patients not seen in 90 days or more, with phone numbers',
+    },
+    patientVisits: {
+      title: 'Patient visits',
+      desc: 'Every completed visit with its doctor, as a first visit or a return',
+    },
+    doctorWorkload: {
+      title: 'Doctor workload',
+      desc: 'Booked, completed and cancelled visits per doctor',
+    },
+    cashClosing: {
+      title: 'Cash closing',
+      desc: 'End-of-day cash: opening balance, money in and out, closing balance',
+    },
+    refunds: {
+      title: 'Refunds',
+      desc: 'Money returned to patients, with the reason',
+    },
+    profitability: {
+      title: 'Profitability',
+      desc: 'Income, expenses, net profit and margin per month',
+    },
+
+    // ---- labels used by the new reports --------------------------------------
+    noShow: 'No-show',
+    noShows: 'No-shows',
+    lost: 'Cancelled or no-show',
+    mostAffected: 'Most affected doctor',
+    inactive90: 'Not seen in 90 days',
+    daysSince: 'Days since last visit',
+    typeInactive: 'Inactive',
+    totalOutstanding: 'Total outstanding',
+    debtors: 'Patients with a balance',
+    largestBalance: 'Largest balance',
+    avgBalance: 'Average balance',
+    totalFees: 'Total fees',
+    otherMethod: 'Other',
+    oldestInvoice: 'Oldest invoice',
+    daysOutstanding: 'Days outstanding',
+    visitFirst: 'First visit',
+    visitReturn: 'Return visit',
+    booked: 'Booked',
+    firstVisits: 'First visits',
+    returnVisits: 'Return visits',
+    month: 'Month',
+    margin: 'Margin',
+    moneyIn: 'Money in',
+    moneyOut: 'Money out',
+
+    // ---- chart titles --------------------------------------------------------
+    chart: {
+      appointments: 'Appointments per day',
+      doctors: 'Appointments per doctor',
+      patients: 'New patients per day',
+      revenue: 'Revenue per day',
+      records: 'Records per day',
+    },
+
+    // ---- column / stat labels used inside the reports -----------------------
+    totalPatients: 'Total patients',
+    patientsSeen: 'Patients seen',
+    activeDoctors: 'Active doctors',
+    topDoctor: 'Top doctor',
+    avgPerDoctor: 'Avg. appointments per doctor',
+    daysWithRecords: 'Days with records',
+    avgRecordsPerDay: 'Avg. records per day',
+    runningTotal: 'Running total',
+    visits: 'Visits',
+    firstVisit: 'First visit',
+    type: 'Type',
+    typeNew: 'New',
+    typeReturning: 'Returning',
+    share: 'Share',
+    byCategory: 'By category',
+    daily: 'Daily breakdown',
+
+    // ---- legacy keys, kept so nothing referencing them breaks ---------------
     period: 'Period',
     generate: 'Generate report',
     exportPdf: 'Export PDF',
@@ -679,6 +936,86 @@ export const EN = {
 
     empty: 'Nothing to report for this period',
     emptyHint: 'Widen the date range or pick a different report.',
+
+    // ---- financial reports (daily closing, collected money, income vs expenses, summary) ----
+    dailyClosing: {
+      title: 'Daily closing',
+      desc: 'What was collected today, the cash that should be in the drawer, and the cash counted',
+    },
+    collections: {
+      title: 'Collected money',
+      desc: 'Every payment received, searchable by date, with refunds',
+    },
+    incomeExpenses: {
+      title: 'Income vs expenses',
+      desc: 'Income, expenses and net profit over any period',
+    },
+    summary: {
+      title: 'Financial summary',
+      desc: 'A one-page summary for a month or a year',
+    },
+    finance: {
+      collected: 'Collected',
+      refunded: 'Refunded',
+      net: 'Net',
+      count: 'Count',
+      amount: 'Amount',
+      type: 'Type',
+      method: 'Method',
+      item: 'Item',
+      examination: 'Examination',
+      visit: 'Visit',
+      freeVisit: 'Free visit',
+      examinations: 'Examinations',
+      visits: 'Visits',
+      freeVisits: 'Free visits',
+      byType: 'By type',
+      byMethod: 'By payment method',
+      byDoctor: 'By doctor',
+      receivedBy: 'Received by',
+      patient: 'Patient',
+      doctor: 'Doctor',
+
+      // daily closing
+      closeTheDay: 'Close the day',
+      drawer: 'Cash in the drawer',
+      openingCash: 'Opening cash',
+      cashCollected: 'Cash collected',
+      cashRefunds: 'Less: cash refunds',
+      cashExpenses: 'Less: cash expenses',
+      expectedCash: 'Expected cash',
+      countedCash: 'Counted cash',
+      difference: 'Difference',
+      closedBy: 'Closed by',
+      saveClosing: 'Save closing',
+      closingSaved: 'The day has been closed.',
+      closingHint: 'Count the drawer, enter the amount, and save. A negative difference means money is missing.',
+
+      // collections
+      addCollection: 'Record a payment',
+      appointment: 'Appointment (today)',
+      chooseAppointment: 'Choose the appointment',
+      noAppointments: 'No unpaid appointments today',
+      saveCollection: 'Save payment',
+      collectionSaved: 'Payment recorded.',
+      refund: 'Refund',
+      refundTitle: 'Refund for {{ name }}',
+      refundAmount: 'Refund amount',
+      refundSaved: 'Refund recorded.',
+      notes: 'Notes',
+      paidCount: 'Payments',
+
+      // revenue / period / summary
+      netRevenue: 'Net revenue',
+      vsPrevious: 'vs previous period',
+      netIncome: 'Net income',
+      grossCollections: 'Total collected',
+      refundsTotal: 'Refunds',
+      totalExpenses: 'Total expenses',
+      perPeriod: 'Breakdown over time',
+      share: 'Share',
+       change: 'Change',
+    },
   },
 
   settings: {
@@ -756,6 +1093,20 @@ export const EN = {
     offlineTitle: 'No connection',
     offlineBody: 'Check your network and try again.',
     backToDashboard: 'Back to dashboard',
+
+    // Shown in the notification when a request fails and the server gave no reason.
+    http: {
+      network: 'We couldn’t reach the server. Please check your connection and try again.',
+      badRequest:
+        'We couldn’t complete your request. Please review the information entered and try again.',
+      unauthorized: 'Your session has expired. Please sign in again to continue.',
+      forbidden: 'You don’t have permission to perform this action.',
+      notFound: 'The requested record could not be found.',
+      conflict: 'This change conflicts with existing information. Please refresh and try again.',
+      tooMany: 'Too many requests. Please wait a moment and try again.',
+      server: 'Something went wrong on our end. Please try again shortly.',
+      generic: 'Something went wrong. Please try again.',
+    },
   },
 
   weekday: {

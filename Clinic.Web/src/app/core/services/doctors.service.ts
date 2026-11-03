@@ -8,7 +8,7 @@ import { ApiService } from './api.service';
 @Injectable({ providedIn: 'root' })
 export class DoctorsService {
   private readonly api = inject(ApiService);
-
+    
   getDoctors(query: DoctorQuery = {}): Observable<Pagination<Doctor>> {
     return this.api.get<Pagination<Doctor>>('Doctors', {
       PageIndex: query.pageIndex,
@@ -41,5 +41,6 @@ export class DoctorsService {
   deleteDoctor(id: number): Observable<void> {
     return this.api.delete<void>(`Doctors/${id}`);
   }
+  
 }
 

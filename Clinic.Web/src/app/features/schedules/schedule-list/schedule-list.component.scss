@@ -1,5 +1,13 @@
 :host {
   display: block;
+
+  // One saturated colour per doctor. White text stays readable on every one.
+  --doc-0: #1f4fd1;
+  --doc-1: #0a6e69;
+  --doc-2: #6d2fb8;
+  --doc-3: #9a4f00;
+  --doc-4: #b02563;
+  --doc-5: #3f4d6e;
 }
 
 .head-actions {
@@ -12,166 +20,290 @@
   width: 190px;
 }
 
-.weeks {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
+// -----------------------------------------------------------------------------
+// Doctor colours: `data-c` carries the palette index.
+// -----------------------------------------------------------------------------
+[data-c='0'] { --doc: var(--doc-0); }
+[data-c='1'] { --doc: var(--doc-1); }
+[data-c='2'] { --doc: var(--doc-2); }
+[data-c='3'] { --doc: var(--doc-3); }
+[data-c='4'] { --doc: var(--doc-4); }
+[data-c='5'] { --doc: var(--doc-5); }
 
-.doctor-head {
-  display: flex;
-  align-items: center;
-}
-
-.doctor-identity {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-5);
-}
-
-.doctor-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
-}
-
-.doctor-text strong {
-  font-size: var(--fs-md);
-  font-weight: var(--fw-semibold);
-}
-
-.doctor-text small {
-  font-size: var(--fs-xs);
-  color: var(--c-text-muted);
+.dot {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--doc);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 // -----------------------------------------------------------------------------
-// Week grid
+// Coverage matrix
 // -----------------------------------------------------------------------------
-.grid-scroll {
+.matrix-scroll {
   overflow-x: auto;
-  border-block-start: 1px solid var(--c-border);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(132px, 1fr));
-  min-width: 924px;
+.matrix {
+  width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
+  border-collapse: collapse;
 }
 
-.day {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-height: 128px;
-  padding: var(--sp-3);
-  border-inline-end: 1px solid var(--c-border);
+.matrix th,
+.matrix td {
+  border-block-start: 1px solid var(--c-border-strong);
+  border-inline-end: 1px solid var(--c-border-strong);
 }
 
-.day:last-child {
+.matrix tr > :last-child {
   border-inline-end: 0;
 }
 
-// The whole cell is the click target for adding hours.
-.day-clickable {
-  cursor: pointer;
+// Dark header band: the days read first.
+.matrix thead th {
+  border-block-start: 0;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--c-primary);
+  color: #fff;
 }
 
-.day-clickable:hover {
-  background: var(--c-surface-2);
-}
-
-.day-clickable:focus-visible {
-  outline: 2px solid var(--c-primary);
-  outline-offset: -2px;
-}
-
-.day-off {
-  background: var(--c-surface-2);
+.corner {
+  width: 140px;
 }
 
 .day-name {
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--c-text-subtle);
+  padding: var(--sp-3);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  text-align: center;
+}
+
+// The part-of-day label: bold, with a strong accent edge.
+.part {
+  padding: var(--sp-3) var(--sp-4);
+  text-align: start;
+  vertical-align: top;
+  background: var(--c-surface-2);
+  border-inline-start: 5px solid var(--c-primary);
+}
+
+.part strong {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.part small {
+  display: block;
+  margin-block-start: 2px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+}
+
+.cell {
+  height: 130px;
+  padding: 0;
+  vertical-align: top;
+  background: var(--c-surface);
+}
+
+.cell-clickable {
+  cursor: pointer;
+}
+
+.cell-clickable:hover {
+  background: var(--c-surface-2);
+}
+
+// Day off: hatched, so it is never mistaken for an empty or a gap cell.
+.cell-off {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--c-surface-2),
+    var(--c-surface-2) 8px,
+    var(--c-surface) 8px,
+    var(--c-surface) 16px
+  );
+}
+
+// Gap: the one cell that should catch the eye.
+.cell-gap {
+  background: var(--c-warning-soft, #ffe3a3);
+  color: var(--c-warning-soft-fg, #6b3d00);
+  box-shadow: inset 0 0 0 2px var(--c-warning, #e8a100);
+}
+
+.cell-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 130px;
+  padding: 7px;
 }
 
 .off-label {
-  font-size: var(--fs-xs);
-  color: var(--c-text-subtle);
+  align-self: center;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--c-text-muted);
 }
 
-.shift {
+.gap-label {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 6px;
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+// -----------------------------------------------------------------------------
+// Doctor chip: a solid block in the doctor's colour, white bold time
+// -----------------------------------------------------------------------------
+.chip {
   display: flex;
   align-items: stretch;
-  gap: 1px;
   border-radius: var(--r-sm);
+  background: var(--doc);
+  color: #fff;
   overflow: hidden;
-  background: var(--c-primary-soft);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
-.shift-time {
+.chip-main {
+  display: flex;
   flex: 1 1 auto;
-  padding: 7px 8px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 6px;
   border: 0;
   background: none;
   font: inherit;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  font-variant-numeric: tabular-nums;
-  color: var(--c-primary-soft-fg);
+  color: inherit;
   text-align: start;
   cursor: pointer;
 }
 
-.shift-time:disabled {
+.chip-main:disabled {
   cursor: default;
 }
 
-.shift-remove {
-  display: grid;
+// The initial turns into a white disc so it stays clear on the coloured chip.
+.chip .dot {
+  background: #fff;
+  color: var(--doc);
+}
+
+.chip-main:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.chip-main:focus-visible,
+.chip-remove:focus-visible,
+.add-cell:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+}
+
+.add-cell:focus-visible {
+  outline-color: var(--c-primary);
+}
+
+.chip-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+// Doctor name above the time; long names are cut with an ellipsis, the tooltip has the full text.
+.chip-name {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-time {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.92;
+}
+
+// Hidden until the chip is hovered or focused, so six chips in a cell stay calm.
+.chip-remove {
+  display: none;
   place-items: center;
   flex: 0 0 auto;
-  width: 26px;
+  width: 24px;
   border: 0;
-  background: none;
-  color: var(--c-primary-soft-fg);
+  background: rgba(0, 0, 0, 0.18);
+  color: #fff;
   cursor: pointer;
-  opacity: 0.6;
-  transition: opacity var(--dur-micro) var(--ease-standard);
 }
 
-.shift-remove:hover {
-  opacity: 1;
-  background: var(--c-danger-soft);
-  color: var(--c-danger-soft-fg);
+.chip:hover .chip-remove,
+.chip:focus-within .chip-remove {
+  display: grid;
 }
 
-// A hint, not a control: the cell around it is what handles the click.
+.chip-remove:hover {
+  background: var(--c-danger, #c62828);
+}
+
+// -----------------------------------------------------------------------------
+// Add affordance
+// -----------------------------------------------------------------------------
 .add-cell {
   display: grid;
   place-items: center;
+  min-height: 26px;
   margin-block-start: auto;
-  min-height: 28px;
-  border: 1px dashed var(--c-border-strong);
+  border: 2px dashed var(--c-border-strong);
   border-radius: var(--r-sm);
   background: none;
-  color: var(--c-text-subtle);
-  pointer-events: none;
+  color: var(--c-text-muted);
+  cursor: pointer;
   opacity: 0;
   transition:
     opacity var(--dur-micro) var(--ease-standard),
     border-color var(--dur-micro) var(--ease-standard);
 }
 
-.day:hover .add-cell,
-.day-clickable:focus-visible .add-cell {
+.cell:hover .add-cell,
+.cell:focus-within .add-cell,
+.add-cell:focus-visible {
   opacity: 1;
+}
+
+.add-cell:hover {
   border-color: var(--c-primary);
   color: var(--c-primary);
+}
+
+.hint {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
 }
 
 @media (max-width: 640px) {
@@ -184,9 +316,15 @@
     flex: 1 1 auto;
     width: auto;
   }
+}
 
-  // Touch devices have no hover, so the add affordance is always visible.
+// Touch devices have no hover, so the add and remove controls are always visible.
+@media (hover: none) {
   .add-cell {
     opacity: 1;
+  }
+
+  .chip-remove {
+    display: grid;
   }
 }

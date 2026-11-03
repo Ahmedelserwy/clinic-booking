@@ -10,7 +10,7 @@ import {
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTimepickerModule } from '@angular/material/timepicker';
@@ -22,6 +22,7 @@ import {
   Doctor,
   DoctorShiftRequest,
 } from '../../../core/models/doctor.model';
+ import { ReexaminationPolicy,DEFAULT_REEXAMINATION,DoctorServiceItem } from '../../../core/services/Doctor service.model';
 import { WEEK_DAYS, WeekDay } from '../../../core/models/schedule.model';
 import { DoctorsService } from '../../../core/services/doctors.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -30,7 +31,7 @@ import { nameValidators, phoneValidator } from '../../../core/utils/validators';
 import { SpecialtyPipe } from '../../../shared/pipes/specialty.pipe';
 import { FieldErrorComponent } from '../../../shared/ui/field-error/field-error.component';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
-
+ import { DoctorReexaminationDialogComponent,ReexaminationDialogData } from '../doctor-detail/Doctor reexamination dialog.component';
 export interface DoctorDialogData {
   doctor?: Doctor;
   /** Specialities already in use, offered before the built-in list. */
@@ -41,6 +42,14 @@ export interface DoctorDialogData {
 type ShiftForm = FormGroup<{
   start: FormControl<Date | null>;
   end: FormControl<Date | null>;
+}>;
+
+/** One row of the Services editor. */
+type ServiceForm = FormGroup<{
+  id: FormControl<number | null>;
+  name: FormControl<string>;
+  price: FormControl<number | null>;
+  durationMinutes: FormControl<number | null>;
 }>;
 
 /** A day and the shifts assigned to it. A day with no shifts is "Off". */
@@ -78,6 +87,7 @@ const DEFAULT_SHIFT_END_MINUTES = 13 * 60;
 })
 export class DoctorFormDialogComponent {
   private readonly api = inject(DoctorsService);
+  private readonly dialog = inject(MatDialog);
   private readonly formBuilder = inject(FormBuilder);
   private readonly notifications = inject(NotificationService);
   private readonly translate = inject(TranslateService);
@@ -112,6 +122,27 @@ export class DoctorFormDialogComponent {
     // `isActive` is undefined on a doctor loaded before this field existed; a
     // practitioner already on the list is practising until told otherwise.
     isActive: [this.data.doctor?.isActive ?? true],
+    // The regular services this doctor provides, each with its own price.
+    services: this.formBuilder.array<ServiceForm>(
+      (this.data.doctor?.services ?? []).map((service) => this.createService(service))
+    ),
+  });
+
+  /** Re-examination policy; edited in its own dialog and sent with the profile. */
+  protected readonly reexamination = signal<ReexaminationPolicy>(
+    this.data.doctor?.reexamination ?? DEFAULT_REEXAMINATION
+  );
+
+  protected readonly reexamSummary = computed(() => {
+    const policy = this.reexamination();
+
+    if (!policy.enabled) {
+      return { key: 'doctors.reexamOff', params: {} };
+    }
+
+    return policy.fee
+      ? { key: 'doctors.reexamSummary', params: { days: policy.validDays, fee: policy.fee } }
+      : { key: 'doctors.reexamSummaryFree', params: { days: policy.validDays } };
   });
 
   /**
@@ -177,6 +208,55 @@ export class DoctorFormDialogComponent {
     if (!this.isEdit) {
       this.addShift(WeekDay.Saturday);
     }
+  }
+
+  // ---------------------------------------------------------------- services --
+
+  private createService(item?: Partial<DoctorServiceItem>): ServiceForm {
+    return this.formBuilder.nonNullable.group({
+      id: this.formBuilder.control<number | null>(item?.id ?? null),
+      name: [item?.name ?? '', [Validators.required, Validators.maxLength(100)]],
+      price: this.formBuilder.control<number | null>(item?.price ?? null, [
+        Validators.required,
+        Validators.min(0),
+        Validators.max(1_000_000),
+      ]),
+      durationMinutes: this.formBuilder.control<number | null>(item?.durationMinutes ?? null, [
+        Validators.min(5),
+        Validators.max(480),
+      ]),
+    });
+  }
+
+  /** The "+" button: appends an empty service row. */
+  protected addService(): void {
+    this.form.controls.services.push(this.createService());
+    this.form.markAsDirty();
+  }
+
+  protected removeService(index: number): void {
+    this.form.controls.services.removeAt(index);
+    this.form.markAsDirty();
+  }
+
+  protected openReexamination(): void {
+    this.dialog
+      .open<DoctorReexaminationDialogComponent, ReexaminationDialogData, ReexaminationPolicy>(
+        DoctorReexaminationDialogComponent,
+        {
+          data: {
+            policy: this.reexamination(),
+            consultationFee: this.form.controls.consultationFee.value,
+          },
+        }
+      )
+      .afterClosed()
+      .subscribe((policy) => {
+        if (policy) {
+          this.reexamination.set(policy);
+          this.form.markAsDirty();
+        }
+      });
   }
 
   // ---------------------------------------------------------------- schedule --
@@ -326,6 +406,15 @@ export class DoctorFormDialogComponent {
       consultationFee: raw.consultationFee,
       bio: raw.bio.trim() || null,
       isActive: raw.isActive,
+      services: raw.services
+        .map((service) => ({
+          id: service.id ?? undefined,
+          name: service.name.trim(),
+          price: service.price ?? 0,
+          durationMinutes: service.durationMinutes,
+        }))
+        .filter((service) => service.name),
+      reexamination: this.reexamination(),
     };
 
     // One request either way. The create carries the rota with it so the API can
@@ -338,7 +427,8 @@ export class DoctorFormDialogComponent {
       next: () => {
         this.saving.set(false);
         this.notifications.success(
-          this.translate.instant(this.isEdit ? 'doctors.updated' : 'doctors.created')
+          this.translate.instant(this.isEdit ? 'doctors.updated' : 'doctors.created'),
+          { kind: 'cross', detail: profile.name }
         );
         this.dialogRef.close(true);
       },

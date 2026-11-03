@@ -1,5 +1,6 @@
 using Clinic.Domain.Entites;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Clinic.Api.DTOs.AppointmentDto
 {
@@ -21,7 +22,13 @@ namespace Clinic.Api.DTOs.AppointmentDto
         /// Where the booking now sits in its lifecycle. Optional: an update that only reschedules
         /// leaves it null and the stored status is kept, so a reschedule cannot silently revert a
         /// confirmed appointment to Pending.
+        ///
+        /// Read from its name ("Confirmed"), which is the form the client holds: AppointmentDto
+        /// sends the status as a string, and the client sends it back unchanged when it
+        /// reschedules. Without this converter the name could not bind to the enum and every
+        /// reschedule failed with a 400.
         /// </summary>
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public AppointmentStatus? Status { get; set; }
 
         [MaxLength(AppointmentDurations.NotesMaxLength)]

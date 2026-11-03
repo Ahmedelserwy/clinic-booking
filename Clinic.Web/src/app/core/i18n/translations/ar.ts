@@ -139,6 +139,7 @@ export const AR: Catalogue = {
     schedules: 'جداول العمل',
     records: 'السجلات الطبية',
     accounts: 'الفاتورة',
+    expenses: 'المصروفات',
     reports: 'التقارير',
     users: 'المستخدمين',
     roles: 'الأدوار والصلاحيات',
@@ -191,20 +192,46 @@ export const AR: Catalogue = {
     greetingMorning: 'صباح الخير، {{ name }}',
     greetingAfternoon: 'طاب يومك، {{ name }}',
     greetingEvening: 'مساء الخير، {{ name }}',
+    summary: 'اليوم لديك {{ appointments }} موعدًا و{{ waiting }} في الانتظار',
 
     todaysPatients: 'مرضى اليوم',
     todaysAppointments: 'مواعيد اليوم',
     upcomingAppointments: 'المواعيد القادمة',
+    remainingToday: 'المتبقي اليوم',
     revenueToday: 'إيرادات اليوم',
     revenueMonth: 'إيرادات الشهر',
     outstanding: 'المستحقات',
     recentPayments: 'أحدث المدفوعات',
+    latestPayments: 'أحدث المدفوعات',
     doctorAvailability: 'تواجد الأطباء',
     calendar: 'تقويم المواعيد',
     quickActions: 'إجراءات سريعة',
     appointmentsByDay: 'المواعيد عبر الزمن',
     revenueTrend: 'اتجاه الإيرادات',
     statusBreakdown: 'حالات المواعيد',
+    appointmentStatusToday: 'حالة مواعيد اليوم',
+
+    last7Days: '٧ أيام',
+    last30Days: '٣٠ يومًا',
+
+    statusCompleted: 'مكتمل',
+    statusInProgress: 'قيد الكشف',
+    statusUpcoming: 'قادم',
+    statusCancelled: 'ملغي',
+
+    phaseNext: 'التالي',
+    phasePast: 'انتهى',
+
+    waitingRoom: 'غرفة الانتظار',
+    live: 'مباشر',
+    waitMinutes: '{{ count }} د',
+
+    needsAttention: 'تحتاج إجراء',
+    allClear: 'لا شيء يحتاج إجراء',
+    allClearHint: 'كل شيء على ما يرام الآن.',
+    attentionPending: '{{ count }} مواعيد بانتظار التأكيد',
+    attentionTomorrow: '{{ count }} مواعيد غدًا',
+    attentionConflict: '{{ count }} مواعيد مع أطباء خارج جدول عملهم اليوم',
 
     quickNewAppointment: 'حجز موعد',
     quickNewPatient: 'تسجيل مريض',
@@ -276,6 +303,12 @@ export const AR: Catalogue = {
     genderFemale: 'أنثى',
     genderOther: 'آخر',
 
+    // تذكير المتابعة
+    followUpToday: 'متابعة اليوم',
+    followUpTodayHint: 'طلب الطبيب أن يعود المريض اليوم للمتابعة.',
+    followUpOverdue: 'متابعة متأخرة · {{ count }} يوم',
+    followUpOverdueHint: 'كان موعد المتابعة يوم {{ date }} ولم يحضر المريض منذ ذلك الحين.',
+
     created: 'تم تسجيل المريض.',
     updated: 'تم تحديث بيانات المريض.',
     deleted: 'تم حذف المريض.',
@@ -316,6 +349,33 @@ export const AR: Catalogue = {
     markDayOff: 'حذف كل ورديات هذا اليوم',
     off: 'إجازة',
     scheduleInvalid: 'صحّح الورديات المميّزة قبل الحفظ.',
+
+    // الخدمات
+    services: 'الخدمات',
+    servicesHint: 'الخدمات العادية التي يقدّمها الطبيب مع سعر كل خدمة',
+    addService: 'إضافة خدمة',
+    removeService: 'حذف الخدمة',
+    serviceName: 'اسم الخدمة',
+    servicePrice: 'السعر',
+    serviceDuration: 'المدة (بالدقائق)',
+    noServices: 'لم تتم إضافة خدمات بعد',
+    serviceCount: '{{ count }} خدمات',
+
+    // إعادة الكشف
+    reexamTitle: 'إعادة الكشف',
+    reexamEdit: 'إعداد',
+    reexamOff: 'غير مفعّلة',
+    reexamSummary: 'خلال {{ days }} يوم بسعر {{ fee }}',
+    reexamSummaryFree: 'مجانية خلال {{ days }} يوم',
+    reexamIntro:
+      'إذا عاد المريض إلى نفس الطبيب خلال المدة المحددة بعد الكشف الأول، يُحتسب الكشف إعادة بالسعر المحدد هنا.',
+    reexamEnable: 'السماح بإعادة الكشف',
+    reexamFee: 'سعر إعادة الكشف',
+    reexamFeeHint: 'اكتب 0 لتكون مجانية',
+    reexamValidDays: 'مدة الصلاحية (بالأيام)',
+    reexamValidDaysHint: 'المدة بعد الكشف الأول التي يُعدّ فيها الكشف إعادة',
+    reexamRegularFee: 'سعر الكشف العادي: {{ fee }}',
+    reexamBadge: 'إعادة كشف',
 
     created: 'تمت إضافة الطبيب.',
     updated: 'تم تحديث بيانات الطبيب.',
@@ -378,7 +438,10 @@ export const AR: Catalogue = {
     changeStatus: 'تغيير الحالة',
     statusChanged: 'تم تحديث الحالة.',
     dragHint: 'اسحب الموعد لنقله. لا يُحفظ التغيير إلا إذا سمحت به قواعد العيادة.',
-
+    totalCount: 'الإجمالي: {{ count }}',
+    hiddenDoctors: '{{ count }} أطباء في إجازة اليوم',
+    hiddenDoctorsHint: 'هؤلاء الأطباء ليس لديهم ساعات عمل ولا مواعيد في هذا اليوم.',
+    clickToBook: 'انقر على وقت فارغ ضمن ساعات عمل الطبيب لحجزه.',
     emptyDay: 'لا توجد مواعيد في هذا اليوم',
     emptyDayFiltered: 'لا توجد مواعيد مطابقة لعوامل التصفية في هذا اليوم.',
     noResources: 'لا يوجد أطباء في العمل',
@@ -430,6 +493,17 @@ export const AR: Catalogue = {
     hoursPerWeek: '{{ count }} ساعة / أسبوع',
     noHours: 'لا يعمل',
 
+    // مصفوفة التغطية: فترات اليوم تظهر كصفوف.
+    part: {
+      morning: 'صباحاً',
+      noon: 'ظهراً',
+      evening: 'مساءً',
+      night: 'ليلاً',
+    },
+    gap: 'فجوة',
+    coverageHint:
+      'كل شريحة تمثل طبيباً ووقته داخل هذه الفترة من اليوم، والوردية التي تمتد على فترتين تظهر في الاثنتين. “فجوة” تعني عدم وجود أي طبيب بينما العيادة تعمل قبلها وبعدها.',
+
     created: 'تمت إضافة ساعات العمل.',
     updated: 'تم تحديث ساعات العمل.',
     deleted: 'تم حذف ساعات العمل.',
@@ -458,17 +532,46 @@ export const AR: Catalogue = {
     typeProcedure: 'إجراء',
     typeNote: 'ملاحظة',
 
+    // نموذج الكشف
     complaint: 'الشكوى الرئيسية',
+    examination: 'الفحص السريري',
     diagnosis: 'التشخيص',
+    requestedTests: 'التحاليل والأشعة المطلوبة',
     treatment: 'العلاج',
-    prescription: 'الروشتة',
+    instructions: 'تعليمات للمريض',
     attachments: 'المرفقات',
     recordedBy: 'سُجّل بواسطة',
+
+    // الروشتة
+    prescription: 'الروشتة',
+    medName: 'اسم الدواء',
+    medDosage: 'الجرعة',
+    medDosageHint: 'قرص × 3 يوميًا بعد الأكل',
+    medDuration: 'المدة',
+    medDurationHint: 'أسبوع',
+    addMedication: 'إضافة دواء',
+    removeMedication: 'حذف الدواء',
+    prescriptionNote: 'ملاحظات الروشتة',
+    addPrescriptionNote: 'إضافة ملاحظة',
+
+    // المتابعة
+    followUpDate: 'موعد المتابعة',
+    followUp3d: 'بعد 3 أيام',
+    followUp1w: 'بعد أسبوع',
+    followUp2w: 'بعد أسبوعين',
+    followUp1m: 'بعد شهر',
+    noFollowUp: 'بدون متابعة',
+
+    // العلامات الحيوية
     vitals: 'العلامات الحيوية',
     bloodPressure: 'ضغط الدم',
     temperature: 'درجة الحرارة',
     pulse: 'النبض',
+    bloodSugar: 'السكر',
+    oxygenSaturation: 'تشبع الأكسجين',
     weight: 'الوزن',
+
+    saveAndInvoice: 'حفظ وإنشاء فاتورة',
 
     created: 'تمت إضافة السجل.',
     updated: 'تم تحديث السجل.',
@@ -509,6 +612,12 @@ export const AR: Catalogue = {
     subtotal: 'المجموع الفرعي',
     discount: 'الخصم',
     tax: 'الضريبة',
+
+    // نموذج فاتورة العيادة: طبيب واحد ونوع زيارة واحد وسعر واحد.
+    visitType: 'نوع الزيارة',
+    examination: 'كشف',
+    followUp: 'إعادة كشف',
+    fee: 'سعر الكشف',
 
     payment: 'دفعة',
     newPayment: 'تسجيل دفعة',
@@ -642,8 +751,156 @@ export const AR: Catalogue = {
   },
 
   reports: {
+    // ---- hub ---------------------------------------------------------------
     title: 'التقارير',
     subtitle: 'التحليلات التشغيلية والمالية.',
+    hubSubtitle: 'اختر تقريرًا لعرضه أو البحث فيه أو طباعته أو تصديره.',
+    open: 'فتح التقرير',
+    back: 'العودة إلى التقارير',
+
+    // ---- shared toolbar (report shell) --------------------------------------
+    print: 'طباعة',
+    from: 'من تاريخ',
+    to: 'إلى تاريخ',
+    thisWeek: 'هذا الأسبوع',
+    thisMonth: 'هذا الشهر',
+    last30: 'آخر ٣٠ يومًا',
+    last7: 'آخر ٧ أيام',
+    last90: 'آخر ٩٠ يومًا',
+    trend: 'الاتجاه خلال الفترة',
+    searchReports: 'ابحث في التقارير',
+    searchRows: 'ابحث في هذا التقرير',
+    noResults: 'لا توجد تقارير مطابقة لبحثك.',
+    generated: 'أُنشئ في',
+    chartCapped: 'يعرض آخر ٣٠ يومًا من الفترة',
+    tableTitle: 'التفاصيل',
+    rows: 'صفوف',
+
+    // ---- one entry per report (title + card description) --------------------
+    appointments: {
+      title: 'تقرير المواعيد',
+      desc: 'كل مواعيد الفترة مع حالة كل موعد',
+    },
+    doctors: {
+      title: 'أداء الأطباء',
+      desc: 'المواعيد والمرضى والنسبة لكل طبيب',
+    },
+    patients: {
+      title: 'تقرير المرضى',
+      desc: 'المرضى الجدد والعائدون وعدد زيارات كل مريض',
+    },
+    revenue: {
+      title: 'تقرير الإيرادات',
+      desc: 'الإيراد اليومي ومتوسط الإيراد لكل زيارة',
+    },
+    expenses: {
+      title: 'مصروفات العيادة',
+      desc: 'كل مصروف مع فئته، الأحدث أولًا',
+    },
+    profitLoss: {
+      title: 'الأرباح والخسائر',
+      desc: 'الإيرادات ناقص المصروفات وصافي النتيجة يوميًا',
+    },
+    records: {
+      title: 'تقرير السجلات الطبية',
+      desc: 'السجلات الإكلينيكية المُنشأة خلال الفترة',
+    },
+
+    cancellations: {
+      title: 'الإلغاءات وعدم الحضور',
+      desc: 'المواعيد الضائعة ومن تؤثر عليه ومعدل تكرارها',
+    },
+    balances: {
+      title: 'الأرصدة المستحقة',
+      desc: 'المرضى الذين عليهم مبالغ، الأكبر أولًا',
+    },
+    doctorFees: {
+      title: 'أتعاب الأطباء',
+      desc: 'الكشوفات المكتملة والأتعاب المستحقة لكل طبيب',
+    },
+    dailyIncome: {
+      title: 'إيراد العيادة',
+      desc: 'التحصيل نقدًا وبالبطاقة وغيرها لكل يوم مع المرتجعات والمصروفات',
+    },
+    followUp: {
+      title: 'مرضى للمتابعة',
+      desc: 'مرضى لم يزورونا منذ ٩٠ يومًا أو أكثر مع أرقام هواتفهم',
+    },
+    patientVisits: {
+      title: 'زيارات المرضى',
+      desc: 'كل زيارة مكتملة مع الطبيب ونوعها: كشف أو إعادة كشف',
+    },
+    doctorWorkload: {
+      title: 'عبء عمل الأطباء',
+      desc: 'المحجوز والمكتمل والملغى لكل طبيب',
+    },
+    cashClosing: {
+      title: 'إقفال الخزينة',
+      desc: 'نقدية نهاية اليوم: رصيد أول اليوم والداخل والخارج ورصيد الإقفال',
+    },
+    refunds: {
+      title: 'المرتجعات',
+      desc: 'المبالغ المردودة للمرضى مع السبب',
+    },
+    profitability: {
+      title: 'الربحية',
+      desc: 'الإيراد والمصروفات وصافي الربح وهامشه لكل شهر',
+    },
+
+    // ---- labels used by the new reports --------------------------------------
+    noShow: 'لم يحضر',
+    noShows: 'عدم الحضور',
+    lost: 'ملغى أو لم يحضر',
+    mostAffected: 'الطبيب الأكثر تأثرًا',
+    inactive90: 'لم يزورونا منذ ٩٠ يومًا',
+    daysSince: 'الأيام منذ آخر زيارة',
+    typeInactive: 'منقطع',
+    totalOutstanding: 'إجمالي المستحقات',
+    debtors: 'مرضى عليهم رصيد',
+    largestBalance: 'أكبر رصيد',
+    avgBalance: 'متوسط الرصيد',
+    totalFees: 'إجمالي الأتعاب',
+    otherMethod: 'أخرى',
+    oldestInvoice: 'أقدم فاتورة',
+    daysOutstanding: 'أيام التأخير',
+    visitFirst: 'كشف',
+    visitReturn: 'إعادة كشف',
+    booked: 'المحجوز',
+    firstVisits: 'كشف',
+    returnVisits: 'إعادة كشف',
+    month: 'الشهر',
+    margin: 'الهامش',
+    moneyIn: 'الداخل',
+    moneyOut: 'الخارج',
+
+    // ---- chart titles --------------------------------------------------------
+    chart: {
+      appointments: 'المواعيد يوميًا',
+      doctors: 'المواعيد لكل طبيب',
+      patients: 'المرضى الجدد يوميًا',
+      revenue: 'الإيرادات يوميًا',
+      records: 'السجلات يوميًا',
+    },
+
+    // ---- column / stat labels used inside the reports -----------------------
+    totalPatients: 'إجمالي المرضى',
+    patientsSeen: 'المرضى الذين تمت معاينتهم',
+    activeDoctors: 'الأطباء النشطون',
+    topDoctor: 'الطبيب الأكثر نشاطًا',
+    avgPerDoctor: 'متوسط المواعيد لكل طبيب',
+    daysWithRecords: 'أيام بها سجلات',
+    avgRecordsPerDay: 'متوسط السجلات يوميًا',
+    runningTotal: 'الإجمالي التراكمي',
+    visits: 'الزيارات',
+    firstVisit: 'أول زيارة',
+    type: 'النوع',
+    typeNew: 'جديد',
+    typeReturning: 'عائد',
+    share: 'النسبة',
+    byCategory: 'حسب الفئة',
+    daily: 'التفصيل اليومي',
+
+    // ---- legacy keys, kept so nothing referencing them breaks ---------------
     period: 'الفترة',
     generate: 'إنشاء التقرير',
     exportPdf: 'تصدير PDF',
@@ -665,6 +922,86 @@ export const AR: Catalogue = {
 
     empty: 'لا توجد بيانات في هذه الفترة',
     emptyHint: 'وسّع الفترة الزمنية أو اختر تقريرًا آخر.',
+
+    // ---- financial reports (daily closing, collected money, income vs expenses, summary) ----
+    dailyClosing: {
+      title: 'تقفيل اليومية',
+      desc: 'المحصّل اليوم، والنقدية التي يجب أن تكون في الدرج، والنقدية التي تم عدّها',
+    },
+    collections: {
+      title: 'المبالغ المحصّلة',
+      desc: 'كل دفعة مستلمة مع البحث بالتاريخ والمرتجعات',
+    },
+    incomeExpenses: {
+      title: 'الإيرادات مقابل المصروفات',
+      desc: 'الإيرادات والمصروفات وصافي الربح خلال أي فترة',
+    },
+    summary: {
+      title: 'الملخص المالي',
+      desc: 'ملخص من صفحة واحدة لشهر أو لسنة',
+    },
+    finance: {
+      collected: 'المحصّل',
+      refunded: 'المرتجع',
+      net: 'الصافي',
+      count: 'العدد',
+      amount: 'المبلغ',
+      type: 'النوع',
+      method: 'طريقة الدفع',
+      item: 'البند',
+      examination: 'كشف',
+      visit: 'إعادة كشف',
+      freeVisit: 'زيارة مجانية',
+      examinations: 'الكشوفات',
+      visits: 'الزيارات',
+      freeVisits: 'المجانية',
+      byType: 'حسب النوع',
+      byMethod: 'حسب طريقة الدفع',
+      byDoctor: 'حسب الطبيب',
+      receivedBy: 'استلمها',
+      patient: 'المريض',
+      doctor: 'الطبيب',
+
+      // daily closing
+      closeTheDay: 'تقفيل اليوم',
+      drawer: 'النقدية في الدرج',
+      openingCash: 'رصيد أول اليوم',
+      cashCollected: 'النقدية المحصّلة',
+      cashRefunds: 'ناقص: مرتجعات نقدية',
+      cashExpenses: 'ناقص: مصروفات نقدية',
+      expectedCash: 'النقدية المتوقعة',
+      countedCash: 'النقدية المعدودة',
+      difference: 'الفرق',
+      closedBy: 'قفلها',
+      saveClosing: 'حفظ التقفيل',
+      closingSaved: 'تم تقفيل اليوم.',
+      closingHint: 'عُدّ الدرج وأدخل المبلغ ثم احفظ. الفرق السالب يعني وجود نقص.',
+
+      // collections
+      addCollection: 'تسجيل دفعة',
+      appointment: 'الموعد (اليوم)',
+      chooseAppointment: 'اختر الموعد',
+      noAppointments: 'لا توجد مواعيد غير مدفوعة اليوم',
+      saveCollection: 'حفظ الدفعة',
+      collectionSaved: 'تم تسجيل الدفعة.',
+      refund: 'استرداد',
+      refundTitle: 'استرداد مبلغ {{ name }}',
+      refundAmount: 'مبلغ الاسترداد',
+      refundSaved: 'تم تسجيل الاسترداد.',
+      notes: 'ملاحظات',
+      paidCount: 'الدفعات',
+
+      // revenue / period / summary
+      netRevenue: 'صافي الإيراد',
+      vsPrevious: 'مقارنة بالفترة السابقة',
+      netIncome: 'صافي الدخل',
+      grossCollections: 'إجمالي المحصّل',
+      refundsTotal: 'المرتجعات',
+      totalExpenses: 'إجمالي المصروفات',
+      perPeriod: 'التفصيل عبر الزمن',
+      share: 'النسبة',
+       change: 'التغيّر', 
+    },
   },
 
   settings: {
@@ -742,6 +1079,18 @@ export const AR: Catalogue = {
     offlineTitle: 'لا يوجد اتصال',
     offlineBody: 'تحقق من الشبكة ثم أعد المحاولة.',
     backToDashboard: 'العودة إلى الرئيسية',
+
+    http: {
+      network: 'تعذّر الاتصال بالخادم. يرجى التحقق من الاتصال والمحاولة مرة أخرى.',
+      badRequest: 'تعذّر إتمام الطلب. يرجى مراجعة البيانات المدخلة والمحاولة مرة أخرى.',
+      unauthorized: 'انتهت جلستك. يرجى تسجيل الدخول مرة أخرى للمتابعة.',
+      forbidden: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.',
+      notFound: 'تعذّر العثور على السجل المطلوب.',
+      conflict: 'يتعارض هذا التغيير مع بيانات قائمة. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
+      tooMany: 'عدد الطلبات كبير. يرجى الانتظار قليلًا ثم المحاولة مرة أخرى.',
+      server: 'حدث خطأ من جانبنا. يرجى المحاولة مرة أخرى بعد قليل.',
+      generic: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+    },
   },
 
   weekday: {

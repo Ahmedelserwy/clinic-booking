@@ -7,15 +7,16 @@
 // `left: 0` is immediately, visibly wrong: the time column lands on the far side
 // of the appointments it labels.
 //
-// Colour comes only from design tokens, so the dark theme needs no rules here.
+// Colour comes only from design tokens (mixed with color-mix where a tint is
+// needed), so the dark theme needs no rules here.
 // =============================================================================
 
 :host {
   display: block;
+  --c-primary: var(--c-button, #12284b);
 }
 
 .cal-page {
-  // The grid owns its own scrolling, so the page must not add a second one.
   min-width: 0;
 }
 
@@ -23,10 +24,32 @@
 // Toolbar
 // -----------------------------------------------------------------------------
 .toolbar {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--c-primary) 6%, var(--c-surface)),
+    var(--c-surface)
+  );
+
+  // A colour strip along the top edge: the one place the page announces its
+  // brand colour before the grid takes over.
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 0;
+    block-size: 3px;
+    background: linear-gradient(
+      90deg,
+      var(--c-primary),
+      color-mix(in srgb, var(--c-primary) 45%, var(--c-primary-fg))
+    );
+  }
 }
 
 .toolbar-row {
@@ -37,13 +60,15 @@
 }
 
 .toolbar-meta {
-  padding-block-start: var(--sp-3);
+  padding-block-start: var(--sp-2);
   border-block-start: 1px solid var(--c-border);
 }
 
 .filter {
-  flex: 0 1 200px;
+  flex: 0 1 190px;
   min-width: 150px;
+  --mat-form-field-container-height: 42px;
+  --mat-form-field-container-vertical-padding: 9px;
 }
 
 .clear-btn {
@@ -54,24 +79,64 @@
   flex: 1 1 auto;
 }
 
-.headline {
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-semibold);
-  letter-spacing: -0.01em;
-  color: var(--c-text);
+// The date is the heading *and* the way into the date picker.
+.headline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 4px var(--sp-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-primary);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-standard);
 }
 
-// Segmented Day / Week control.
+.headline-btn:hover {
+  background: color-mix(in srgb, var(--c-primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--c-primary) 25%, transparent);
+}
+
+.headline-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.headline {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  color: var(--c-primary);
+}
+
+.hint-icon {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: var(--r-full);
+  color: var(--c-text-muted);
+  cursor: help;
+}
+
+.hint-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+// Segmented Day / Week control. The active segment is solid, so which view you
+// are in is the loudest thing in the toolbar rather than a faint white pill.
 .segmented {
   display: inline-flex;
-  padding: 2px;
-  border: 1px solid var(--c-border);
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--c-primary) 22%, var(--c-border));
   border-radius: var(--r-full);
-  background: var(--c-surface-2);
+  background: color-mix(in srgb, var(--c-primary) 8%, var(--c-surface-2));
 }
 
 .segment {
-  padding: 5px var(--sp-4);
+  padding: 6px var(--sp-4);
   border: 0;
   border-radius: var(--r-full);
   background: transparent;
@@ -84,14 +149,15 @@
     color var(--dur-micro) var(--ease-standard);
 }
 
-.segment:hover {
-  color: var(--c-text);
+.segment:hover:not(.is-active) {
+  color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 10%, transparent);
 }
 
 .segment.is-active {
-  background: var(--c-surface);
-  color: var(--c-primary);
-  box-shadow: var(--sh-card);
+  background: var(--c-primary);
+  color: var(--c-primary-fg);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--c-primary) 35%, transparent);
 }
 
 .segment:focus-visible {
@@ -105,15 +171,17 @@
   gap: var(--sp-1);
 }
 
+// Same pill radius as the Today button and the segmented control, so the
+// toolbar speaks one shape language.
 .nav-btn {
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-primary) 25%, var(--c-border));
+  border-radius: var(--r-full);
   background: var(--c-surface);
-  color: var(--c-text-muted);
+  color: var(--c-primary);
   cursor: pointer;
   transition:
     background-color var(--dur-micro) var(--ease-standard),
@@ -121,8 +189,8 @@
 }
 
 .nav-btn:hover {
-  background: var(--c-surface-2);
-  color: var(--c-text);
+  background: var(--c-primary);
+  color: var(--c-primary-fg);
 }
 
 .nav-btn:focus-visible {
@@ -134,39 +202,107 @@
   min-width: 0;
 }
 
+// Already on today: filled and calm instead of the greyed-out look of a
+// disabled button, which read as "broken" rather than "you are here".
+.today-btn.is-current {
+  background: var(--c-primary-soft);
+  color: var(--c-primary-soft-fg);
+  border-color: color-mix(in srgb, var(--c-primary) 40%, transparent);
+  font-weight: var(--fw-semibold);
+  cursor: default;
+}
+
 .datepick {
   display: inline-flex;
   align-items: center;
+  color: var(--c-primary);
 }
 
 // -----------------------------------------------------------------------------
-// Status legend
+// Status legend (with per-status counts) and the "hidden doctors" note
+//
+// Chips with solid swatches. The swatch is the status accent itself — the same
+// colour as the rail on the blocks — so the legend is a key you can match by eye.
 // -----------------------------------------------------------------------------
 .legend {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
   flex-wrap: wrap;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+.legend-total {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+  white-space: nowrap;
+  padding-inline-end: var(--sp-1);
+}
+
 .legend-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 3px var(--sp-3);
+  border: 1.5px solid var(--accent, var(--c-border));
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--accent, var(--c-surface)) 20%, var(--c-surface));
   font-size: var(--fs-xs);
-  color: var(--c-text-muted);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
   white-space: nowrap;
+}
+
+// A status nobody has today stays in the key, but quieter.
+.legend-item.is-zero {
+  color: var(--c-text-muted);
+  background: color-mix(in srgb, var(--accent, var(--c-surface)) 8%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--accent, var(--c-border)) 45%, transparent);
+}
+
+.legend-item.is-zero .legend-count {
+  background: color-mix(in srgb, var(--accent, var(--c-primary)) 40%, var(--c-surface-2));
+}
+
+.legend-item.is-zero .legend-swatch {
+  opacity: 0.5;
+}
+
+.legend-count {
+  min-inline-size: 1.4em;
+  padding: 0 6px;
+  border-radius: var(--r-full);
+  background: var(--accent, var(--c-primary));
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-bold);
+  text-align: center;
 }
 
 .legend-swatch {
   width: 12px;
   height: 12px;
-  border-radius: 4px;
-  border: 1px solid;
+  border-radius: var(--r-full);
   flex: 0 0 auto;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-surface) 85%, transparent);
+}
+
+.chip-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px var(--sp-3);
+  border-radius: var(--r-full);
+  background: var(--c-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--c-warning) 35%, transparent);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--c-text);
+  white-space: nowrap;
+  cursor: help;
 }
 
 // -----------------------------------------------------------------------------
@@ -194,48 +330,71 @@
   height: 44px;
 }
 
-.cal-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-xs);
-  color: var(--c-text-subtle);
-}
-
 // -----------------------------------------------------------------------------
 // The grid
 // -----------------------------------------------------------------------------
 .calendar {
+  // Defined here, not on the grid, because the empty-state overlay is a sibling
+  // of the grid and needs to start below the header too.
+  --head-h: 68px;
+
   position: relative;
   overflow: hidden; // keeps the sticky header inside the card's rounded corner
+  border: 1px solid color-mix(in srgb, var(--c-primary) 28%, var(--c-border));
 }
 
 .cal-scroll {
   // Both axes: tablets scroll sideways through resources, every device scrolls
   // down through the day.
   overflow: auto;
-  max-block-size: min(72vh, 860px);
-  overscroll-behavior: contain;
+  // Sized from the viewport. The chrome above the grid is now two toolbar rows
+  // (~14rem on a small laptop), and the floor is low enough that a 768px-high
+  // screen is not pushed past the fold into a second, page-level scrollbar.
+  max-block-size: clamp(320px, calc(100dvh - 21rem), 860px);
+  // Vertical scroll chains to the page once the grid reaches its end. `contain`
+  // on both axes trapped the wheel inside the grid: at 5 PM you could not scroll
+  // on unless the cursor was outside it.
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
 }
 
 .cal-grid {
   --time-col: 74px;
   --lane-min: 168px;
-  // Fixed so the "now" overlay can be offset from the top of the grid without
-  // measuring the DOM. Both views put a label over a sublabel, so one height fits.
-  --head-h: 54px;
 
   position: relative;
   display: grid;
   grid-template-columns: var(--time-col) repeat(var(--lane-count), minmax(var(--lane-min), 1fr));
   grid-template-rows: var(--head-h) auto;
   // `min-content` for a grid is the sum of its tracks' minimums, so the grid box
-  // grows to fit every column and the container scrolls. `max-content` would
-  // have sized columns to the longest doctor name instead of to `--lane-min`.
+  // grows to fit every column and the container scrolls.
   min-inline-size: min-content;
 }
 
+// One doctor: a 1000px-wide column makes a block's text hug one edge. Cap the
+// lane and let the empty remainder be plain surface.
+.cal-grid.is-single {
+  grid-template-columns: var(--time-col) minmax(var(--lane-min), 640px);
+  justify-content: start;
+  min-inline-size: 0;
+}
+
 // ------------------------------------------------------------------ header --
+// A light tint with dark text: the saturated gradient used to be the loudest
+// thing on the page and pulled the eye away from the appointments. Solid brand
+// colour is kept for "today" only.
+.cal-corner,
+.cal-head {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--c-primary) 88%, white),
+    var(--c-primary)
+  );
+  color: var(--c-primary-fg);
+  border-block-end: 3px solid color-mix(in srgb, var(--c-primary) 60%, white);
+  border-inline-end: 1px solid color-mix(in srgb, var(--c-primary-fg) 18%, transparent);
+}
+
 .cal-corner {
   position: sticky;
   inset-block-start: 0;
@@ -244,10 +403,7 @@
   display: grid;
   place-items: center;
   block-size: var(--head-h);
-  background: var(--c-surface-2);
-  border-block-end: 1px solid var(--c-border);
-  border-inline-end: 1px solid var(--c-border);
-  color: var(--c-text-subtle);
+  color: var(--c-primary-fg);
 }
 
 .cal-head {
@@ -261,35 +417,37 @@
   min-width: 0;
   block-size: var(--head-h);
   padding: var(--sp-2) var(--sp-3);
-  background: var(--c-surface-2);
-  border-block-end: 1px solid var(--c-border);
-  border-inline-end: 1px solid var(--c-border);
   text-align: center;
 }
 
+// Today's column (week view): solid brand colour, found by brightness and shape
+// (the bar) and not by hue alone.
 .cal-head.is-today {
-  background: var(--c-primary-soft);
+  background: linear-gradient(180deg, var(--c-primary), color-mix(in srgb, var(--c-primary) 80%, black));
+  color: var(--c-primary-fg);
+  box-shadow: inset 0 -4px 0 var(--c-primary-fg);
 }
 
 .head-label {
   font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--c-text);
+  font-weight: var(--fw-bold);
+  color: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.cal-head.is-today .head-label {
-  color: var(--c-primary-soft-fg);
 }
 
 .head-sub {
-  font-size: var(--fs-2xs);
-  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: color-mix(in srgb, var(--c-primary-fg) 92%, transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cal-head.is-today .head-sub {
+  color: color-mix(in srgb, var(--c-primary-fg) 85%, transparent);
 }
 
 // -------------------------------------------------------------- time column --
@@ -298,8 +456,8 @@
   inset-inline-start: 0;
   z-index: 15;
   block-size: var(--grid-h);
-  background: var(--c-surface);
-  border-inline-end: 1px solid var(--c-border);
+  background: color-mix(in srgb, var(--c-primary) 7%, var(--c-surface));
+  border-inline-end: 1px solid color-mix(in srgb, var(--c-primary) 28%, var(--c-border));
 }
 
 .time-cell {
@@ -307,19 +465,24 @@
   align-items: flex-start;
   justify-content: flex-end;
   block-size: var(--slot-h);
+  box-sizing: border-box;
   padding-inline-end: var(--sp-2);
-  // Pulled up half a line so the label sits *on* its gridline rather than in
-  // the box beneath it — the way a printed diary reads.
-  padding-block-start: 2px;
-  font-size: var(--fs-2xs);
+  padding-block-start: 3px;
+  // 12px floor: the old 2xs labels were hard to read even before the "now"
+  // badge covered them.
+  font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
-  color: var(--c-text-subtle);
+  color: var(--c-text-muted);
+  // The ruler: a short dashed rule for the half hour, a solid one for the hour,
+  // matching the lines drawn across the lanes.
+  border-block-start: 1px dashed color-mix(in srgb, var(--c-border) 80%, transparent);
 }
 
 .time-cell.is-hour {
-  color: var(--c-text-muted);
-  font-weight: var(--fw-semibold);
-  font-size: var(--fs-xs);
+  color: var(--c-primary);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  border-block-start: 1px solid var(--c-border-strong);
 }
 
 // ---------------------------------------------------------------- the lanes --
@@ -330,26 +493,45 @@
   z-index: 1;
   block-size: var(--grid-h);
   border-inline-end: 1px solid var(--c-border);
-  // Closed by default; working hours are painted over this.
-  background-color: var(--c-surface-2);
-  // Gridlines as a gradient rather than one element per slot: a week of 30-minute
-  // rows is ~200 nodes per lane that would exist only to draw a line.
+  // Closed time: a clear blue-grey with faint diagonal hatching.
+  background-color: color-mix(in srgb, var(--c-primary) 11%, var(--c-surface-2));
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--c-primary) 7%, transparent) 0 2px,
+    transparent 2px 9px
+  );
+}
+
+.cal-lane.can-book {
+  cursor: cell;
+}
+
+// The gridlines live on a pseudo-element above the working bands.
+//
+// They used to be the lane's own background, and `.band-working` is an opaque
+// child painted over it — so inside working hours, the only time anyone looks
+// at the grid, there were no lines at all.
+.cal-lane::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0; // after the bands in tree order, below every block (z-index >= 1)
+  pointer-events: none;
   background-image:
     repeating-linear-gradient(
       to bottom,
-      var(--c-border) 0 1px,
+      var(--c-border-strong) 0 1px,
       transparent 1px calc(var(--slot-h) * 2)
     ),
     repeating-linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--c-border) 55%, transparent) 0 1px,
+      color-mix(in srgb, var(--c-border) 75%, transparent) 0 1px,
       transparent 1px var(--slot-h)
     );
-  background-repeat: repeat;
 }
 
 .cal-lane.is-today {
-  background-color: color-mix(in srgb, var(--c-primary-soft) 45%, var(--c-surface-2));
+  background-color: color-mix(in srgb, var(--c-primary) 16%, var(--c-surface-2));
 }
 
 .lane-bands {
@@ -365,18 +547,46 @@
   inset-inline: 0;
 }
 
+// Open time is the brightest thing on the grid: white (surface) with a hair of
+// brand tint, bounded by an edge so the working window reads as a clear shape.
 .band-working {
-  background: var(--c-surface);
+  background: color-mix(in srgb, var(--c-primary) 2.5%, var(--c-surface));
+  border-block: 2px solid color-mix(in srgb, var(--c-primary) 30%, transparent);
 }
 
-// A break is on-site but unbookable: hatched so it reads as different from both
-// "open" and "closed" without relying on hue alone.
+.cal-lane.is-today .band-working {
+  background: color-mix(in srgb, var(--c-primary-soft) 45%, var(--c-surface));
+}
+
+// A break is on-site but unbookable: hatched and warm, so it reads as different
+// from both "open" and "closed" without relying on hue alone.
 .band-break {
   background: repeating-linear-gradient(
     135deg,
-    color-mix(in srgb, var(--c-warning-soft) 70%, transparent) 0 6px,
-    transparent 6px 12px
+    color-mix(in srgb, var(--c-warning-soft) 100%, transparent) 0 6px,
+    color-mix(in srgb, var(--c-warning-soft) 40%, var(--c-surface)) 6px 12px
   );
+}
+
+// "Book here" ghost: follows the pointer over a free working slot. Below the
+// blocks (z-index 1+) so it never covers an appointment, above the bands.
+.hover-ghost {
+  position: absolute;
+  inset-inline: 3px;
+  block-size: var(--slot-h);
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline: var(--sp-2);
+  border: 1px dashed color-mix(in srgb, var(--c-primary) 60%, transparent);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--c-primary) 10%, transparent);
+  color: var(--c-primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
 // ------------------------------------------------------------- now indicator --
@@ -389,42 +599,87 @@
 .now {
   position: absolute;
   inset-inline: 0;
-  // `top` is bound to the offset within the lane area; the header is added here
-  // so the component never needs to know how tall the header is.
   margin-block-start: var(--head-h);
   z-index: 18;
   block-size: 0;
   pointer-events: none;
 }
 
+// 2px, no glow: at 3px it swallowed the top border of a block starting on the
+// hour.
 .now-line {
   position: absolute;
   inset-inline: 0;
-  inset-block-start: 0;
+  inset-block-start: -1px;
   block-size: 2px;
   background: var(--c-danger);
-  opacity: 0.85;
+  box-shadow: 0 0 4px color-mix(in srgb, var(--c-danger) 45%, transparent);
 }
 
+// The badge sits at the far end of the line, away from the time column: at the
+// start it covered the hour label it was supposed to sit beside.
 .now-badge {
   position: absolute;
-  inset-inline-start: var(--sp-1);
-  inset-block-start: -9px;
+  inset-inline-end: var(--sp-2);
+  inset-block-start: -11px;
   z-index: 1;
-  padding: 1px 6px;
+  padding: 2px 8px;
   border-radius: var(--r-full);
   background: var(--c-danger);
   color: var(--c-danger-fg);
   font-size: var(--fs-2xs);
-  font-weight: var(--fw-semibold);
+  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  border: 2px solid color-mix(in srgb, var(--c-primary) 7%, var(--c-surface));
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--c-danger) 45%, transparent);
 }
 
-// ------------------------------------------------------------- empty overlay --
+// ------------------------------------------------------------- empty bar --
+// A bar in normal flow above the grid. Nothing is laid over the grid itself, so
+// free slots stay visible and clickable on an empty day.
 .cal-empty {
-  border-block-start: 1px solid var(--c-border);
-  background: var(--c-surface);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-4);
+  background: color-mix(in srgb, var(--c-primary) 6%, var(--c-surface));
+  border-block-end: 1px solid color-mix(in srgb, var(--c-primary) 22%, var(--c-border));
+}
+
+.cal-empty-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-full);
+  background: var(--c-primary-soft);
+  color: var(--c-primary-soft-fg);
+}
+
+.cal-empty-text {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  min-width: 0;
+  line-height: var(--lh-tight);
+}
+
+.cal-empty-title {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+}
+
+.cal-empty-hint {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+.cal-empty-action {
+  flex: none;
 }
 
 // -----------------------------------------------------------------------------
@@ -432,7 +687,7 @@
 // -----------------------------------------------------------------------------
 @media (max-width: 900px) {
   .toolbar-meta .legend {
-    // The legend wraps below the date rather than competing with it for the row.
+    // The legend wraps below the filters rather than competing with them.
     inline-size: 100%;
     justify-content: flex-start;
   }
@@ -441,13 +696,11 @@
 @media (max-width: 640px) {
   .cal-grid {
     --time-col: 58px;
-    // Narrower, but never so narrow that a name is unreadable — a phone scrolls
-    // sideways through resources instead of shrinking five into 400px.
     --lane-min: 148px;
   }
 
   .cal-scroll {
-    max-block-size: min(64vh, 640px);
+    max-block-size: clamp(300px, calc(100dvh - 17rem), 640px);
   }
 
   .toolbar {
@@ -471,3 +724,35 @@
     flex: 1 1 0;
   }
 }
+
+.chev {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.head-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.head-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-full);
+  background: hsl(var(--h) 75% 55%);
+  color: #fff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-primary-fg) 55%, transparent);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+} 

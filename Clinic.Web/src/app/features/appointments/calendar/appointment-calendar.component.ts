@@ -88,9 +88,18 @@ const NOW_TICK_MS = 30_000;
 /** The waiting-room screen's route. It lives outside the shell, so it opens full-screen. */
 const QUEUE_DISPLAY_ROUTE = '/queue-display';
 
+/** The booking form's route; click-to-book prefills it through the query string. */
+const NEW_APPOINTMENT_ROUTE = '/appointments/new';
+
 interface LaneBands {
   working: { topPx: number; heightPx: number }[];
   breaks: { topPx: number; heightPx: number }[];
+}
+
+interface HoverSlot {
+  laneId: string;
+  topPx: number;
+  label: string;
 }
 
 /**
@@ -175,8 +184,11 @@ export class AppointmentCalendarComponent {
   protected readonly loadingAppointments = signal(true);
   protected readonly failed = signal(false);
 
+  /** The empty slot under the pointer, shown as a "book here" ghost. */
+  protected readonly hover = signal<HoverSlot | null>(null);
+
   private readonly now = signal(new Date());
-  /** Only the first successful load steers the scroll position. */
+  /** Steers the scroll position once per loaded range (reset on every range change). */
   private hasAutoScrolled = false;
 
   protected readonly legend = APPOINTMENT_STATUS_LEGEND;
@@ -215,6 +227,14 @@ export class AppointmentCalendarComponent {
 
   protected readonly canCancel = computed(
     () => this.permissions.can('appointments.delete') && this.hasWriteRole()
+  );
+
+  /** Creating is not role-gated on the API, only by this app's permission. */
+  protected readonly canBook = computed(() => this.permissions.can('appointments.create'));
+
+  /** The toolbar's info tooltip: dragging if the user can, otherwise click-to-book. */
+  protected readonly hintText = computed(() =>
+    this.canEdit() ? 'appointments.dragHint' : 'appointments.clickToBook'
   );
 
   // ---------------------------------------------------------------- range --
@@ -299,6 +319,18 @@ export class AppointmentCalendarComponent {
     });
   });
 
+  /** Legend entries with how many visible appointments carry each status. */
+  protected readonly legendEntries = computed(() => {
+    const counts = new Map<string, number>();
+    for (const appointment of this.visibleAppointments()) {
+      counts.set(appointment.status, (counts.get(appointment.status) ?? 0) + 1);
+    }
+
+    return this.legend.map((entry) => ({ ...entry, count: counts.get(entry.status) ?? 0 }));
+  });
+
+  protected readonly totalCount = computed(() => this.visibleAppointments().length);
+
   // ---------------------------------------------------------------- lanes --
 
   private readonly resourceProvider = computed(
@@ -341,6 +373,17 @@ export class AppointmentCalendarComponent {
       (doctor) => working.has(doctor.id) || booked.has(doctor.id)
     );
   });
+
+  /**
+   * How many doctors in the current pool have no column today.
+   *
+   * Without this a missing column is indistinguishable from a missing doctor.
+   */
+  protected readonly hiddenDoctorCount = computed(() =>
+    this.view() === 'day' && this.doctorId() === 'all'
+      ? Math.max(this.doctorOptions().length - this.laneDoctors().length, 0)
+      : 0
+  );
 
   /**
    * Today as `YYYY-MM-DD`.
@@ -386,6 +429,11 @@ export class AppointmentCalendarComponent {
       ),
     }));
   });
+
+  /** One doctor in day view: the column is capped so it does not stretch across the screen. */
+  protected readonly isSingleLane = computed(
+    () => this.view() === 'day' && this.lanes().length === 1
+  );
 
   // ---------------------------------------------------------------- items --
 
@@ -514,6 +562,17 @@ export class AppointmentCalendarComponent {
     return minutesToPx(minutes - start);
   });
 
+  /** Top of the earliest appointment on screen, or null for an empty range. */
+  private readonly firstItemOffsetPx = computed(() => {
+    const items = this.items();
+    if (!items.length) {
+      return null;
+    }
+
+    const earliest = Math.min(...items.map((item) => item.startMinutes));
+    return minutesToPx(Math.max(earliest - this.gridRange().start, 0));
+  });
+
   protected readonly nowLabel = computed(() => this.formatTime(this.now()));
 
   // ---------------------------------------------------------------- chrome --
@@ -562,15 +621,20 @@ export class AppointmentCalendarComponent {
     effect(() => {
       const from = this.rangeStart();
       const to = this.rangeEnd();
-      untracked(() => this.loadAppointments(from, to));
+      untracked(() => {
+        // A new range gets its own opening scroll position.
+        this.hasAutoScrolled = false;
+        this.loadAppointments(from, to);
+      });
     });
 
     const ticker = setInterval(() => this.now.set(new Date()), NOW_TICK_MS);
     this.destroyRef.onDestroy(() => clearInterval(ticker));
 
-    // Open on the working day rather than at the top of the grid.
+    // Open where the work is: the "now" line today, otherwise the day's first
+    // appointment, otherwise the top. Without the middle case a 4 PM booking
+    // sat below an empty 9 AM screen with nothing hinting it was there.
     effect(() => {
-      const offset = this.nowOffsetPx();
       const ready = !this.loading();
       const element = this.scroller()?.nativeElement;
 
@@ -578,8 +642,10 @@ export class AppointmentCalendarComponent {
         return;
       }
 
+      const target = this.nowOffsetPx() ?? this.firstItemOffsetPx();
+
       this.hasAutoScrolled = true;
-      element.scrollTop = offset === null ? 0 : Math.max(0, offset - SLOT_HEIGHT_PX * 2);
+      element.scrollTop = target === null ? 0 : Math.max(0, target - SLOT_HEIGHT_PX * 2);
     });
   }
 
@@ -690,6 +756,75 @@ export class AppointmentCalendarComponent {
     this.reloadAppointments();
   }
 
+  // ------------------------------------------------------------ click to book --
+
+  /**
+   * The start (in minutes) of the bookable slot under the pointer, or null when
+   * the pointer is over a block, outside working hours, or booking is not allowed.
+   */
+  private slotAt(event: MouseEvent, lane: CalendarLane): number | null {
+    if (!this.canBook()) {
+      return null;
+    }
+
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('app-appointment-block')) {
+      return null;
+    }
+
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const { start, end } = this.gridRange();
+    const slot = this.settings.slotMinutes();
+
+    // Half a slot up so the slot containing the pointer is chosen, not the nearest line.
+    const raw = start + pxToSnappedMinutes(event.clientY - rect.top - SLOT_HEIGHT_PX / 2);
+    const minutes = Math.min(Math.max(raw, start), Math.max(end - slot, start));
+
+    return withinIntervals(lane.workingIntervals, minutes, minutes + slot) ? minutes : null;
+  }
+
+  protected onLaneMove(event: MouseEvent, lane: CalendarLane): void {
+    const minutes = this.slotAt(event, lane);
+    if (minutes === null) {
+      if (this.hover()) {
+        this.hover.set(null);
+      }
+      return;
+    }
+
+    const topPx = minutesToPx(minutes - this.gridRange().start);
+    const current = this.hover();
+    if (current && current.laneId === lane.id && current.topPx === topPx) {
+      return;
+    }
+
+    this.hover.set({ laneId: lane.id, topPx, label: this.slotLabel(minutes) });
+  }
+
+  /** Books into the clicked gap: the booking form opens on that day, doctor and time. */
+  protected onLaneClick(event: MouseEvent, lane: CalendarLane): void {
+    const minutes = this.slotAt(event, lane);
+    if (minutes === null) {
+      return;
+    }
+
+    const date = lane.date ?? this.selectedDate();
+    const hh = String(Math.floor(minutes / 60)).padStart(2, '0');
+    const mm = String(minutes % 60).padStart(2, '0');
+
+    const queryParams: Record<string, string> = {
+      date: toDateOnly(date),
+      time: `${hh}:${mm}`,
+    };
+    if (lane.resource?.doctorId != null) {
+      queryParams['doctorId'] = String(lane.resource.doctorId);
+    } else if (this.doctorId() !== 'all') {
+      queryParams['doctorId'] = String(this.doctorId());
+    }
+
+    void this.router.navigate([NEW_APPOINTMENT_ROUTE], { queryParams });
+  }
+
   // ------------------------------------------------------------ drag & drop --
 
   protected canDrag(appointment: Appointment): boolean {
@@ -713,6 +848,7 @@ export class AppointmentCalendarComponent {
    */
   protected onDragEnded(event: CdkDragEnd, item: PositionedItem): void {
     event.source.reset();
+    this.hover.set(null);
 
     const laneId = this.laneIdAt(event.event) ?? item.laneId;
     const lane = this.lanes().find((candidate) => candidate.id === laneId);
@@ -783,6 +919,11 @@ export class AppointmentCalendarComponent {
 
   protected slotLabel(minutes: number): string {
     return this.formatTime(minutesToDate(minutes));
+  }
+
+  /** A stable colour per doctor, matching the patient list avatars. */
+  protected hue(name: string): number {
+    return ((name.codePointAt(0) ?? 0) * 47) % 360;
   }
 
   /** Only labels on the hour, so the half-hour gridline stays uncluttered. */

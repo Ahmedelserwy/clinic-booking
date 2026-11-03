@@ -6,12 +6,58 @@ import { PatientProfile, PatientProfileStore } from '../../core/data/patient-pro
 import { Pagination } from '../../core/models/pagination.model';
 import { CreatePatientRequest, Patient, calculateAge } from '../../core/models/patient.model';
 import { PatientsService } from '../../core/services/patients.service';
+import { parseDate } from '../../core/utils/date.util';
 import { SearchEvent } from '../../shared/ui/search-field/search-field.component';
 
 /** An API patient joined to its locally-held clinical profile. */
 export interface PatientView extends Patient {
   profile: PatientProfile;
   age: number | null;
+}
+
+/** A follow-up the doctor set that is due today, or was due earlier and has not been honoured. */
+export type FollowUpPhase = 'today' | 'overdue';
+
+export interface FollowUpInfo {
+  date: Date;
+  phase: FollowUpPhase;
+  /** Whole days past the due date; 0 when it is due today. */
+  daysLate: number;
+}
+
+const DAY_MS = 86_400_000;
+
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Decides whether a follow-up date needs the front desk's attention.
+ *
+ * Future follow-ups return `null` (nothing to do yet), and so does one the
+ * patient has already honoured: a visit on or after the due day clears it.
+ */
+export function followUpInfo(
+  due: Date | null | undefined,
+  lastVisit: Date | null | undefined,
+  now: Date = new Date()
+): FollowUpInfo | null {
+  if (!due) {
+    return null;
+  }
+
+  const dueDay = startOfDay(due);
+  const today = startOfDay(now);
+
+  if (dueDay.getTime() > today.getTime()) {
+    return null;
+  }
+  if (lastVisit && lastVisit.getTime() >= dueDay.getTime()) {
+    return null;
+  }
+
+  const daysLate = Math.round((today.getTime() - dueDay.getTime()) / DAY_MS);
+  return { date: due, phase: daysLate === 0 ? 'today' : 'overdue', daysLate };
 }
 
 export interface PatientListQuery {
@@ -82,6 +128,27 @@ export class PatientsFacade {
           };
         })
       );
+  }
+
+  /**
+   * The follow-up date from the patient's most recent record that set one, or
+   * `null`. Only the newest counts: a later visit supersedes an older plan.
+   */
+  followUpDateFor(patientId: number): Date | null {
+    const dated = this.records
+      .forPatient(patientId)
+      .map((record) => ({
+        occurredAt: new Date(record.occurredAt).getTime(),
+        raw: (record as unknown as { followUpDate?: string | Date | null }).followUpDate,
+      }))
+      .filter((entry) => Boolean(entry.raw))
+      .sort((a, b) => b.occurredAt - a.occurredAt);
+
+    const raw = dated[0]?.raw;
+    if (!raw) {
+      return null;
+    }
+    return raw instanceof Date ? raw : parseDate(String(raw));
   }
 
   get(id: number): Observable<PatientView> {

@@ -2,7 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  width: min(680px, 84vw);
+  // Wide enough for two columns, so the whole consultation fits without long scrolling.
+  width: min(960px, 92vw);
   padding-block-start: var(--sp-1);
 }
 
@@ -24,20 +25,196 @@
   min-width: 0;
 }
 
-.option-row {
+// Allergies / chronic conditions bar.
+.alerts {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--sp-2);
 }
 
-.vitals {
-  margin: 0;
-  padding: var(--sp-3) var(--sp-4) var(--sp-1);
+.alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.alert-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+// "Visit · date · time" summary with an edit button.
+.when-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.when-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+// Left: what the patient says and what is found. Right: what is given.
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+@media (min-width: 800px) {
+  .columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-4);
+  }
+}
+
+@media (max-width: 599px) {
+  .when-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// Prescription lines: drug, dose, duration, remove.
+.meds {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
   border: 1px solid var(--c-border);
   border-radius: var(--r-md);
   background: var(--c-surface-2);
 }
 
-.vitals legend {
-  padding-inline: var(--sp-1);
+.meds-title {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--c-text-muted);
+}
+
+.med-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-2);
+}
+
+.med-remove {
+  margin-block-start: 4px;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--c-text-muted);
+}
+
+.meds-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+// Narrow dialog: name on its own line, dose and duration share the next.
+@media (max-width: 799px) {
+  .med-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .med-name {
+    grid-column: 1 / -1;
+  }
+
+  .med-remove {
+    grid-column: 3;
+    grid-row: 2;
+  }
+}
+
+// Follow-up quick picks.
+.follow-up {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.follow-up-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.follow-up-label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-muted);
+}
+
+.quick-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--c-surface-2);
+    border-color: var(--c-primary, currentColor);
+  }
+}
+
+.quick-chip-clear {
+  border-style: dashed;
+  color: var(--c-text-muted);
+}
+
+.follow-up-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+
+  &.has-doctor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 599px) {
+  .follow-up-fields.has-doctor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// Vitals, folded away until asked for.
+.vitals-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.vitals-toggle {
+  align-self: flex-start;
+}
+
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
 }

@@ -1,0 +1,981 @@
+// =============================================================================
+// Toasts
+// -----------------------------------------------------------------------------
+// Colours, radii, spacing and shadows all come from the design tokens, so the
+// toasts follow light/dark mode and the house look without any branching.
+// Reduced motion is handled globally in `_base.scss`.
+// =============================================================================
+
+:host {
+  display: contents;
+}
+
+// Sits at the top centre, over the empty middle of the top bar. Page titles and
+// the sidebar are at the edges and the top bar's buttons are at one end, so
+// nothing the user needs is covered, in either language.
+.toast-region {
+  position: fixed;
+  z-index: var(--z-toast);
+  top: var(--sp-2);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(380px, calc(100vw - 2 * var(--sp-4)));
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .toast-region {
+    left: var(--sp-4);
+    right: var(--sp-4);
+    transform: none;
+    width: auto;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// The toast
+// -----------------------------------------------------------------------------
+.toast {
+  // Per-type colours; the rest of the stylesheet only reads these.
+  --tone: var(--c-success);
+  --tone-on: var(--c-success-fg);
+  --tone-soft: var(--c-success-soft);
+  --tone-fg: var(--c-success-soft-fg);
+
+  position: relative;
+  overflow: hidden;
+  pointer-events: auto;
+
+  // A wash of the toast's colour fading into the normal surface, a tinted
+  // border and a coloured glow underneath: the type is readable at a glance.
+  --tone-light: color-mix(in srgb, var(--tone) 80%, white);
+  --tone-deep: color-mix(in srgb, var(--tone) 78%, black);
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--tone) 20%, var(--c-overlay)) 0%,
+    var(--c-overlay) 64%
+  );
+  border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--c-border));
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 16px 32px -14px color-mix(in srgb, var(--tone) 65%, transparent),
+    var(--sh-overlay);
+
+  // Literal timings (not design tokens) so the motion cannot be lost to a missing variable.
+  animation: toast-in 0.95s cubic-bezier(0.22, 0.9, 0.36, 1) both;
+
+  // Errors shake after landing, so they cannot be missed.
+  &[data-type='error'] {
+    --tone: var(--c-danger);
+    --tone-on: var(--c-danger-fg);
+    --tone-soft: var(--c-danger-soft);
+    --tone-fg: var(--c-danger-soft-fg);
+    animation:
+      toast-in 0.95s cubic-bezier(0.22, 0.9, 0.36, 1) both,
+      toast-shake 0.7s ease-in-out 0.95s 2;
+  }
+
+  // Warnings wobble, a gentler way of asking for attention.
+  &[data-type='warning'] {
+    --tone: var(--c-warning);
+    --tone-on: var(--c-warning-fg);
+    --tone-soft: var(--c-warning-soft);
+    --tone-fg: var(--c-warning-soft-fg);
+    animation:
+      toast-in 0.95s cubic-bezier(0.22, 0.9, 0.36, 1) both,
+      toast-wobble 0.8s ease-in-out 0.95s 2;
+  }
+
+  &[data-type='info'] {
+    --tone: var(--c-accent);
+    --tone-on: var(--c-accent-fg);
+    --tone-soft: var(--c-accent-soft);
+    --tone-fg: var(--c-accent-soft-fg);
+  }
+
+  // The coloured strip on the reading-start edge.
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 5px;
+    background: linear-gradient(180deg, var(--tone-light), var(--tone-deep));
+  }
+
+  // A band of light that sweeps across once as the toast lands.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      105deg,
+      transparent 32%,
+      rgb(255 255 255 / 0.32) 50%,
+      transparent 68%
+    );
+    transform: translateX(-130%);
+    animation: toast-shine 2.4s ease-in-out 0.5s 3;
+  }
+
+  &.is-leaving {
+    pointer-events: none;
+    animation: toast-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+}
+
+.toast__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+}
+
+.toast__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.toast__title {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  color: var(--c-text);
+}
+
+.toast__detail {
+  margin-block-start: 2px;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  color: var(--c-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.toast__action {
+  flex: 0 0 auto;
+  padding: var(--sp-1) var(--sp-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-accent);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-standard);
+
+  &:hover {
+    background: var(--c-accent-soft);
+  }
+}
+
+.toast__close {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-text-subtle);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-micro) var(--ease-standard),
+    color var(--dur-micro) var(--ease-standard);
+
+  &:hover {
+    background: var(--c-surface-2);
+    color: var(--c-text);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+}
+
+// The countdown. It shrinks towards the start side and stops while hovered.
+.toast__bar {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--tone-deep), var(--tone-light));
+  opacity: 0.9;
+  transform-origin: left center;
+  animation: toast-shrink linear forwards;
+
+  &.is-paused {
+    animation-play-state: paused;
+  }
+}
+
+html[dir='rtl'] .toast__bar {
+  transform-origin: right center;
+}
+
+// -----------------------------------------------------------------------------
+// The animated icon
+// -----------------------------------------------------------------------------
+.toast__icon {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-md);
+  // A solid, lit tile in the toast's colour with a white symbol on it.
+  background: linear-gradient(145deg, var(--tone-light), var(--tone-deep));
+  color: var(--tone-on);
+  box-shadow:
+    0 8px 16px -6px color-mix(in srgb, var(--tone) 75%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+  animation:
+    toast-icon-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) 0.2s both,
+    toast-glow 1.2s ease-out 0.9s 3,
+    toast-bob 1.8s ease-in-out 1.6s infinite;
+
+  // Every layer sits in the same grid cell, so they can cross-fade in place.
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.toast[data-type='success'] .toast__icon::before,
+.toast[data-type='info'] .toast__icon::before {
+  // Six dots that burst outwards from the icon as the toast lands.
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: var(--r-full);
+  background: var(--tone-light);
+  box-shadow:
+    0 -26px 0 var(--tone),
+    23px -13px 0 var(--tone-light),
+    23px 13px 0 var(--tone),
+    0 26px 0 var(--tone-light),
+    -23px 13px 0 var(--tone),
+    -23px -13px 0 var(--tone-light);
+  animation: toast-burst 1s ease-out 0.45s both;
+  pointer-events: none;
+}
+
+// The words slide in from the side the icon is on, a beat after the toast lands.
+.toast__text {
+  --shift: -16px;
+  animation: toast-text-in 0.55s ease-out 0.3s both;
+}
+
+html[dir='rtl'] .toast__text {
+  --shift: 16px;
+}
+
+.ic {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+// A stroke that draws itself. `pathLength="1"` makes the dash maths the same for every shape.
+.draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: toast-draw 0.4s ease-out 0.1s forwards;
+}
+
+.draw--first {
+  animation-duration: 0.55s;
+  animation-delay: 0.15s;
+}
+
+.draw--second {
+  animation-delay: 0.65s;
+}
+
+.draw--late {
+  animation-delay: 0.55s;
+}
+
+// The heartbeat line draws, holds, then wipes out the other end - over and over, like a monitor.
+.draw--loop {
+  animation: toast-ecg 1.9s ease-in-out 0.2s infinite;
+}
+
+// Rings that keep rippling outwards from the icon for as long as the toast is up.
+.ring {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-md);
+  border: 2px solid var(--tone);
+  animation: toast-ring 1.7s ease-out 0.5s infinite both;
+}
+
+.ring--late {
+  animation-delay: 1.35s;
+}
+
+// The small check in the corner of icons that are not a check themselves.
+.badge {
+  position: absolute;
+  inset-block-end: -5px;
+  inset-inline-end: -5px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--tone-deep);
+  border-radius: var(--r-full);
+  background: var(--c-overlay);
+  color: var(--tone-deep);
+  animation:
+    toast-pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) 0.8s both,
+    toast-badge-bob 1.8s ease-in-out 1.4s infinite;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+// Success (plain check): the circle and tick draw themselves, then the tick keeps bumping.
+.ic--check {
+  animation: toast-check-bump 2.6s ease-in-out 1.3s infinite;
+}
+
+// ECG: the line sweeps across the screen of a monitor.
+.ic--ecg {
+  width: 32px;
+  height: 20px;
+}
+
+// Heart: a real lub-dub, forever, with rings spreading out of it.
+.ic--heart {
+  animation: toast-heartbeat 1.3s ease-in-out 0.2s infinite;
+
+  path {
+    fill: color-mix(in srgb, currentcolor 35%, transparent);
+  }
+}
+
+// Medical cross: grows while it spins into place, then throbs.
+.cross {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  animation:
+    toast-cross-in 0.8s cubic-bezier(0.2, 1.5, 0.4, 1) both,
+    toast-throb 1.5s ease-in-out 1s infinite;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    border-radius: 2px;
+    background: currentcolor;
+  }
+
+  &::before {
+    inset-block: 0;
+    inset-inline: 8px;
+  }
+
+  &::after {
+    inset-block: 8px;
+    inset-inline: 0;
+  }
+}
+
+// Calendar: stamped down, then ticks and its binder rings flick every few seconds.
+.ic--calendar {
+  animation:
+    toast-stamp 0.55s cubic-bezier(0.2, 1.2, 0.4, 1) both,
+    toast-tick 2.4s ease-in-out 1.4s infinite;
+
+  .flap {
+    transform-box: fill-box;
+    transform-origin: center top;
+    animation: toast-flap 2.4s ease-in-out 1.4s infinite;
+  }
+}
+
+// Receipt: prints out of the slot, line by line, and prints again.
+.clip {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  overflow: hidden;
+}
+
+.ic--receipt {
+  animation: toast-print 2.6s ease-in-out infinite;
+
+  .line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: toast-line 2.6s ease-in-out infinite;
+  }
+}
+
+.ic--receipt .line--1 {
+  animation-delay: 0s;
+}
+
+.ic--receipt .line--2 {
+  animation-delay: 0.12s;
+}
+
+.ic--receipt .line--3 {
+  animation-delay: 0.24s;
+}
+
+// Error: the cross draws itself, then the whole icon shudders every couple of seconds.
+.ic--error {
+  animation: toast-icon-shake 1.9s ease-in-out 1.2s infinite;
+}
+
+// Warning: the triangle draws, then the bar hops and lands with a squash.
+.ic--warning {
+  animation: toast-icon-wiggle 2s ease-in-out 1.1s infinite;
+
+  .bang {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    animation: toast-bang 2s ease-in-out 1.1s infinite;
+  }
+
+  .bang-dot {
+    fill: currentcolor;
+    stroke: none;
+  }
+}
+
+// Info: the dot drops onto its stem, and the whole icon gives a small hop.
+.ic--info {
+  animation: toast-check-bump 2.6s ease-in-out 1.6s infinite;
+
+  .dot-drop {
+    fill: currentcolor;
+    stroke: none;
+    animation: toast-drop 2.6s cubic-bezier(0.3, 1.5, 0.5, 1) 0.7s infinite;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Keyframes
+// -----------------------------------------------------------------------------
+// ----- icon keyframes ---------------------------------------------------------
+@keyframes toast-ecg {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  50%,
+  78% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes toast-heartbeat {
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.32);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.22);
+  }
+}
+
+@keyframes toast-cross-in {
+  from {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes toast-throb {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+}
+
+@keyframes toast-check-bump {
+  0%,
+  62%,
+  100% {
+    transform: scale(1);
+  }
+  74% {
+    transform: scale(1.22);
+  }
+  86% {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes toast-badge-bob {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes toast-tick {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  70% {
+    transform: rotate(-8deg) scale(1.1);
+  }
+  80% {
+    transform: rotate(6deg) scale(1.1);
+  }
+  90% {
+    transform: rotate(-3deg) scale(1);
+  }
+}
+
+@keyframes toast-flap {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  72% {
+    transform: translateY(-2px);
+  }
+  84% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes toast-print {
+  0% {
+    transform: translateY(100%);
+  }
+  34%,
+  88% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-22%);
+    opacity: 0.4;
+  }
+}
+
+@keyframes toast-line {
+  0%,
+  22% {
+    stroke-dashoffset: 1;
+  }
+  44%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes toast-icon-shake {
+  0%,
+  58%,
+  100% {
+    transform: none;
+  }
+  64% {
+    transform: translateX(-3px) rotate(-12deg);
+  }
+  72% {
+    transform: translateX(3px) rotate(10deg);
+  }
+  80% {
+    transform: translateX(-2px) rotate(-7deg);
+  }
+  88% {
+    transform: translateX(1px) rotate(4deg);
+  }
+}
+
+@keyframes toast-icon-wiggle {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  70% {
+    transform: rotate(-9deg);
+  }
+  80% {
+    transform: rotate(8deg);
+  }
+  90% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes toast-bang {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  65% {
+    transform: translateY(-3px) scaleY(1.15);
+  }
+  78% {
+    transform: translateY(0) scaleY(0.8);
+  }
+  88% {
+    transform: translateY(-1px) scaleY(1.05);
+  }
+}
+
+@keyframes toast-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  10% {
+    opacity: 1;
+  }
+  22% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-2px);
+  }
+  38%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Drops in from above, tips, overshoots and settles.
+@keyframes toast-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-230%) rotate(-4deg) scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(14%) rotate(2deg) scale(1.06);
+  }
+  68% {
+    transform: translateY(-7%) rotate(-1deg) scale(0.99);
+  }
+  84% {
+    transform: translateY(3%) rotate(0.4deg) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  15% {
+    transform: translateX(-10px);
+  }
+  30% {
+    transform: translateX(9px);
+  }
+  45% {
+    transform: translateX(-7px);
+  }
+  60% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes toast-wobble {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: rotate(-2.5deg) translateY(-2px);
+  }
+  40% {
+    transform: rotate(2deg) translateY(-1px);
+  }
+  60% {
+    transform: rotate(-1.2deg);
+  }
+  80% {
+    transform: rotate(0.6deg);
+  }
+}
+
+// The icon keeps floating gently while the toast is on screen.
+@keyframes toast-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.06);
+  }
+}
+
+@keyframes toast-burst {
+  from {
+    opacity: 1;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes toast-text-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--shift, -16px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-60%) scale(0.94);
+  }
+}
+
+@keyframes toast-shine {
+  0% {
+    transform: translateX(-130%);
+  }
+  40%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes toast-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-25deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+// A soft ripple of the toast's colour leaving the icon.
+@keyframes toast-glow {
+  from {
+    box-shadow:
+      0 8px 16px -6px color-mix(in srgb, var(--tone) 75%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--tone) 55%, transparent);
+  }
+  to {
+    box-shadow:
+      0 8px 16px -6px color-mix(in srgb, var(--tone) 75%, transparent),
+      0 0 0 14px transparent;
+  }
+}
+
+@keyframes toast-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes toast-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes toast-shrink {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes toast-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes toast-pop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes toast-ring {
+  from {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes toast-beat {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.35);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.3);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes toast-stamp {
+  from {
+    opacity: 0;
+    transform: scale(2) rotate(-14deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes toast-slide {
+  from {
+    transform: translateY(26px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Reduced motion
+// -----------------------------------------------------------------------------
+// People who ask their system for less motion get a plain fade instead of the
+// drop, the light sweep and the icon flourishes. This is also what plays when
+// the operating system's "animation effects" setting is switched off.
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: toast-fade 0.2s linear both !important;
+
+    &::after {
+      display: none;
+    }
+
+    &.is-leaving {
+      animation: toast-fade-out 0.15s linear both !important;
+    }
+  }
+
+  .toast__text,
+  .toast__icon {
+    animation: none !important;
+  }
+
+  .toast .toast__icon::before {
+    display: none !important;
+  }
+
+  // Strokes that would normally draw themselves must simply be there.
+  .toast .draw {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+
+  .toast .ring {
+    display: none !important;
+  }
+
+  .toast .ic,
+  .toast .cross,
+  .toast .badge,
+  .toast .flap,
+  .toast .bang,
+  .toast .dot-drop,
+  .toast .line {
+    animation: none !important;
+  }
+}

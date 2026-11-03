@@ -1,0 +1,189 @@
+:host {
+  display: block;
+}
+
+.dp-field {
+  width: 100%;
+}
+
+.dp-panel {
+  width: 392px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: var(--sp-4);
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg, 14px);
+  box-shadow: 0 14px 36px rgba(15, 37, 64, 0.2);
+}
+
+.dp-title {
+  margin-block-end: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+// ---------------------------------------------------------------- Months
+.dp-months {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-block-end: var(--sp-4);
+}
+
+.dp-month {
+  height: 36px;
+  padding: 0 4px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md, 10px);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.dp-month:hover:not(:disabled):not(.active) {
+  background: var(--c-surface-3);
+}
+
+.dp-month:disabled {
+  color: var(--c-text-subtle);
+  opacity: 0.55;
+}
+
+.dp-month.active,
+.dp-day.active {
+  background: var(--c-text);
+  border-color: var(--c-text);
+  color: var(--c-surface);
+  font-weight: var(--fw-semibold);
+}
+
+// ------------------------------------------------------------ Days + years
+.dp-body {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: flex-start;
+}
+
+.dp-days-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dp-weekdays,
+.dp-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dp-weekdays {
+  margin-block-end: 4px;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+.dp-day {
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md, 10px);
+  background: none;
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.dp-day:hover:not(:disabled):not(.active) {
+  background: var(--c-surface-3);
+}
+
+.dp-day.today:not(.active) {
+  border-color: var(--c-border);
+  font-weight: var(--fw-semibold);
+}
+
+.dp-day:disabled {
+  color: var(--c-text-subtle);
+  opacity: 0.5;
+}
+
+.dp-years-wrap {
+  flex: 0 0 76px;
+}
+
+.dp-years {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 232px;
+  overflow-y: auto;
+  padding-inline-end: 4px;
+  position: relative; // offsetTop of the buttons is measured from here
+  overscroll-behavior: contain;
+}
+
+.dp-year {
+  flex: 0 0 auto;
+  height: 32px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md, 10px);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.dp-year:hover:not(.active) {
+  background: var(--c-surface-3);
+}
+
+.dp-year.active {
+  background: color-mix(in srgb, var(--c-primary) 14%, var(--c-surface));
+  border-color: var(--c-primary);
+  font-weight: var(--fw-semibold);
+}
+
+// ----------------------------------------------------------------- Footer
+.dp-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: var(--sp-3);
+}
+
+.dp-clear {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--r-sm, 6px);
+  background: none;
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.dp-clear:hover {
+  color: var(--c-danger, var(--c-text));
+  background: var(--c-surface-3);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 1px;
+}
+
+@media (max-width: 420px) {
+  .dp-months {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

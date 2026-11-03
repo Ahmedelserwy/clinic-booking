@@ -63,12 +63,6 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/doctors/doctors.routes').then((m) => m.DOCTORS_ROUTES),
       },
-      {
-        path: 'records',
-        data: { breadcrumb: 'nav.records' },
-        loadChildren: () =>
-          import('./features/records/records.routes').then((m) => m.RECORDS_ROUTES),
-      },
 
       // ---------------------------------------------------------- operations --
       {
@@ -88,17 +82,41 @@ export const routes: Routes = [
       { path: 'doctor-schedules', redirectTo: 'schedules', pathMatch: 'full' },
 
       // ------------------------------------------------------------- finance --
-      // The billing module was removed. Anything still pointing at /accounts -
-      // a bookmark, an old link in the patient page - lands on the dashboard
-      // rather than the not-found screen.
+      // A single invoice opens (and prints) here. It must stay above the
+      // `accounts` redirect below: a prefix redirect rewrites
+      // /accounts/invoices/:id to /dashboard/invoices/:id, which matches nothing.
+      {
+        path: 'accounts/invoices/:id',
+        title: 'Invoice | Clinic',
+        data: { breadcrumb: 'common.details' },
+        canActivate: [permissionGuard('accounts.view')],
+        loadComponent: () =>
+          import('./features/accounts/invoice-detail/invoice-detail.component').then(
+            (m) => m.InvoiceDetailComponent
+          ),
+      },
+      // The billing module was removed. Anything else still pointing at
+      // /accounts - a bookmark, an old link - lands on the dashboard rather than
+      // the not-found screen.
       { path: 'accounts', redirectTo: 'dashboard', pathMatch: 'prefix' },
+      // Clinic running costs (rent, utilities, salaries...). Guarded by the existing
+      // finance permission; swap in a dedicated 'expenses.view' once it exists on the Roles screen.
+      {
+        path: 'expenses',
+        title: 'Expenses | Clinic',
+        data: { breadcrumb: 'nav.expenses' },
+        canActivate: [permissionGuard('accounts.view')],
+        loadComponent: () =>
+          import('./features/Expenses/Expenses.component').then((m) => m.ExpensesComponent),
+      },
+      // One page per report: /reports/appointments, /reports/doctors, ...
+      // `/reports` itself redirects to the first report (see reports.routes.ts).
       {
         path: 'reports',
-        title: 'Reports | Clinic',
         data: { breadcrumb: 'nav.reports' },
         canActivate: [permissionGuard('reports.view')],
-        loadComponent: () =>
-          import('./features/reports/reports.component').then((m) => m.ReportsComponent),
+        loadChildren: () =>
+          import('./features/reports/Reports.routes').then((m) => m.REPORTS_ROUTES),
       },
 
       // ------------------------------------------------------ administration --

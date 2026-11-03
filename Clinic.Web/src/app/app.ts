@@ -1,24 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-
-import { LoadingService } from './core/services/loading.service';
 
 /**
  * The application root.
  *
- * The only chrome here is a top progress bar driven by the HTTP loading
- * interceptor — a 2px line at the very top of the viewport rather than a
- * blocking spinner, so an in-flight request never takes the UI away from the
- * user mid-task.
+ * It only hosts the router. Loading feedback lives where it can be seen in
+ * context: the shell shows a loader over the content while a page opens, tables
+ * show their own, and a small indicator in the top bar shows background requests.
  */
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, MatProgressBarModule],
+  imports: [RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {
-  protected readonly loading = inject(LoadingService);
-}
+export class App {}
